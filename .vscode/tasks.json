@@ -8,10 +8,10 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                //"Ingresar_libros.cpp",
                 "Connection.cpp",
-                //"libros_prestados.cpp",
                 "UserAuth.cpp",
+                "MenuWindow.cpp",
+                "AddBookWindow.cpp",
                 "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}.exe",
