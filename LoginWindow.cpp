@@ -1,9 +1,13 @@
+#include <string>
 #include <windows.h>
 #include "UserAuth.h"
 #include "Connection.h"
+#include "MenuWindow.h"
+#include "LoginWindow.h"
 
 // Variables globales
 HINSTANCE hInst;
+HINSTANCE hInstGlobal;
 HWND hUsername, hPassword;
 HWND hNewUser, hNewPass, hNewEmail;
 UserAuth *auth;
@@ -12,13 +16,16 @@ PGconn *conn;
 // Declaración
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK RegistroWndProc(HWND, UINT, WPARAM, LPARAM);
-void ShowLoginWindow();
+void ShowLoginWindow(HINSTANCE hInstance);
 void ShowRegisterWindow(HWND hwndLogin);
 void login(HWND hwnd);
 
 // WinMain con Unicode
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
 {
+
+    hInstGlobal = hInstance;
+
     conn = conectarDB();
     if (!conn)
         return 1;
@@ -39,7 +46,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
     wcReg.lpszClassName = L"RegistroWindow";
     RegisterClassW(&wcReg);
 
-    ShowLoginWindow();
+    ShowLoginWindow(hInstance);
 
     MSG msg = {};
     while (GetMessage(&msg, NULL, 0, 0))
@@ -54,8 +61,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
 }
 
 // Mostrar ventana login
-void ShowLoginWindow()
-{
+void ShowLoginWindow(HINSTANCE hInstance) {
+    hInst = hInstance;
+
     HWND hwnd = CreateWindowW(L"LoginWindow", L"Login - Biblioteca", WS_OVERLAPPEDWINDOW,
                               CW_USEDEFAULT, CW_USEDEFAULT, 400, 250, NULL, NULL, hInst, NULL);
     ShowWindow(hwnd, SW_SHOW);
@@ -79,7 +87,6 @@ void login(HWND hwnd)
     GetWindowTextW(hUsername, username, 100);
     GetWindowTextW(hPassword, password, 100);
 
-    // Convertir a std::string
     char u[100], p[100];
     wcstombs(u, username, 100);
     wcstombs(p, password, 100);
@@ -87,7 +94,8 @@ void login(HWND hwnd)
     if (auth->login(u, p))
     {
         MessageBoxW(hwnd, L"¡Inicio de sesión exitoso!", L"Éxito", MB_OK);
-        // Aquí puedes cargar el menú principal
+        DestroyWindow(hwnd); // Cierra la ventana de login
+        ShowMenuWindow(hInstGlobal, username);
     }
     else
     {
