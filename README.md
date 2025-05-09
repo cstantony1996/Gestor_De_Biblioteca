@@ -16,7 +16,7 @@ Este es nuestro proyecto de semestre para desarrollar un sistema de gestión de 
 |------------|-------------|
 | C++17 | Lenguaje de programación principal |
 | PostgreSQL | Sistema de gestión de base de datos |
-| libpqxx | Biblioteca C++ para PostgreSQL |
+| libpq-fe | Biblioteca C++ para PostgreSQL |
 | Git | Control de versiones |
 | GitHub | Plataforma de colaboración |
 
