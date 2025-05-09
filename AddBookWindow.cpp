@@ -1,5 +1,6 @@
 #include "AddBookWindow.h"
 #include "Connection.h"  // Incluye tu archivo Connection.h
+#include "MenuWindow.h"
 #include <commctrl.h>
 #include <string>
 #include <vector>
@@ -34,12 +35,31 @@ LRESULT CALLBACK AddBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             CreateWindowW(L"STATIC", fieldLabels[i].c_str(), WS_VISIBLE | WS_CHILD,
                 20, 20 + i * 50, 180, 20, hwnd, nullptr, nullptr, nullptr);
 
-            hEditFields[i] = CreateWindowW(L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER,
-                200, 20 + i * 50, 250, 20, hwnd, nullptr, nullptr, nullptr);
+                const wchar_t* defaultText = (i == 2 ? L"978- -  -     - " : L"");
+
+                int width = (i == 0) ? 295 : 250;
+                hEditFields[i] = CreateWindowW(L"EDIT", defaultText, WS_VISIBLE | WS_CHILD | WS_BORDER,
+                200, 20 + i * 50, width, 20, hwnd, nullptr, nullptr, nullptr);
+                
         }
 
-        CreateWindowW(L"BUTTON", L"Agregar Libro", WS_VISIBLE | WS_CHILD,
-            200, 340, 150, 30, hwnd, (HMENU)1, nullptr, nullptr);
+        // Calcula posiciones centradas
+const int BUTTON_WIDTH = 150;
+const int BUTTON_HEIGHT = 30;
+const int BUTTON_Y = 340;  // Misma posición vertical
+const int TOTAL_BUTTONS_WIDTH = 2 * BUTTON_WIDTH + 20;  // 20px de separación
+const int START_X = (575 - TOTAL_BUTTONS_WIDTH) / 2;  // Centrado horizontal
+
+// Botón "Regresar" (izquierda)
+CreateWindowW(L"BUTTON", L"Regresar", WS_VISIBLE | WS_CHILD,
+    START_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, 
+    hwnd, (HMENU)2, nullptr, nullptr);
+
+// Botón "Agregar Libro" (derecha)
+CreateWindowW(L"BUTTON", L"Agregar Libro", WS_VISIBLE | WS_CHILD,
+    START_X + BUTTON_WIDTH + 20, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT,
+    hwnd, (HMENU)1, nullptr, nullptr);
+            
         break;
     }
 
@@ -69,7 +89,9 @@ LRESULT CALLBACK AddBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             }
 
             // Verificar si el ISBN ya existe
-            const char* paramValues[1] = { WStringToString(values[2]).c_str() };
+            std::string isbnStr = WStringToString(values[2]);
+            const char* paramValues[1] = { isbnStr.c_str() };
+
             PGresult* res = PQexecParams(conn,
                 "SELECT COUNT(*) FROM libros WHERE isbn = $1",
                 1, nullptr, paramValues, nullptr, nullptr, 0);
@@ -89,36 +111,58 @@ LRESULT CALLBACK AddBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
             }
             PQclear(res);
 
-            // Insertar nuevo libro
+            std::string titulo     = WStringToString(values[0]);
+            std::string autor      = WStringToString(values[1]);
+            std::string isbn       = WStringToString(values[2]);
+            std::string editorial  = WStringToString(values[3]);
+            std::string año        = WStringToString(values[4]);
+            std::string materia    = WStringToString(values[5]);
+            
             const char* insertParams[6] = {
-                WStringToString(values[0]).c_str(),
-                WStringToString(values[1]).c_str(),
-                WStringToString(values[2]).c_str(),
-                WStringToString(values[3]).c_str(),
-                WStringToString(values[4]).c_str(),
-                WStringToString(values[5]).c_str()
+                titulo.c_str(),
+                autor.c_str(),
+                isbn.c_str(),
+                editorial.c_str(),
+                año.c_str(),
+                materia.c_str()
             };
 
-            res = PQexecParams(conn,
-                "INSERT INTO libros (titulo, autor, isbn, editorial, anio, materia) VALUES ($1, $2, $3, $4, $5, $6)",
-                6, nullptr, insertParams, nullptr, nullptr, 0);
+            OutputDebugStringA(("Título: " + titulo + "\n").c_str());
+OutputDebugStringA(("Autor: " + autor + "\n").c_str());
+OutputDebugStringA(("ISBN: " + isbn + "\n").c_str());
+OutputDebugStringA(("Editorial: " + editorial + "\n").c_str());
+OutputDebugStringA(("Año: " + año + "\n").c_str());
+OutputDebugStringA(("Materia: " + materia + "\n").c_str());
 
-            if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-                MessageBoxA(hwnd, PQerrorMessage(conn), "Error al insertar", MB_ICONERROR);
-            } else {
-                std::wstring msg = L"El libro " + values[0] + L" ha sido agregado exitosamente";
-                MessageBoxW(hwnd, msg.c_str(), L"Éxito", MB_OK);
-            }
 
-            PQclear(res);
-            PQfinish(conn);
-        }
-        break;
+res = PQexecParams(conn,
+    "INSERT INTO libros (titulo, autor, isbn, editorial, año, materia) VALUES ($1, $2, $3, $4, $5, $6)",
+    6, nullptr, insertParams, nullptr, nullptr, 0);
 
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
+if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+    MessageBoxA(hwnd, PQerrorMessage(conn), "Error al insertar", MB_ICONERROR);
+} else {
+    std::wstring msg = L"El libro " + values[0] + L" ha sido agregado exitosamente";
+    MessageBoxW(hwnd, msg.c_str(), L"Éxito", MB_OK);
+
+    // Limpiar campos
+    for (int i = 0; i < 6; ++i) {
+        SetWindowTextW(hEditFields[i], (i == 2 ? L"978- -  -     - " : L""));
     }
+}
+
+PQclear(res);
+PQfinish(conn);
+} else if (LOWORD(wParam) == 2) { // Botón Regresar
+DestroyWindow(hwnd); // Cierra esta ventana
+ShowMenuWindow(GetModuleHandle(nullptr), currentUser); // Vuelve al menú
+}
+break;
+
+case WM_DESTROY:
+PostQuitMessage(0);
+break;
+}
     return DefWindowProcW(hwnd, msg, wParam, lParam);
 }
 
@@ -140,7 +184,7 @@ void ShowAddBookWindow(HINSTANCE hInstance, const std::wstring& username) {
         title.c_str(), 
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, 
-        500, 450, 
+        575, 450, 
         nullptr, nullptr, hInstance, nullptr);
 
     ShowWindow(hwnd, SW_SHOW);
