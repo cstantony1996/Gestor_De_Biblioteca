@@ -1,6 +1,8 @@
 #include "AddBookWindow.h"
 #include "Connection.h"  // Incluye tu archivo Connection.h
 #include "MenuWindow.h"
+#include "StringUtils.h"
+#include "GlobalVars.h"
 #include <commctrl.h>
 #include <string>
 #include <vector>
@@ -10,23 +12,10 @@
 #pragma comment(lib, "libpq.lib")
 
 HWND hEditFields[6];
-std::wstring currentUser;
 
 std::vector<std::wstring> fieldLabels = {
     L"Título", L"Autor", L"ISBN", L"Editorial", L"Año de Publicación", L"Materia o Área Científica"
 };
-
-// Función para convertir std::wstring a std::string
-std::string WStringToString(const std::wstring& wstr) {
-    if (wstr.empty()) return "";
-    
-    int size = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), 
-                                 nullptr, 0, nullptr, nullptr);
-    std::string result(size, 0);
-    WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), 
-                            &result[0], size, nullptr, nullptr);
-    return result;
-}
 
 LRESULT CALLBACK AddBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {

@@ -1,6 +1,8 @@
 #include <string>
 #include "MenuWindow.h"
 #include "LoginWindow.h"
+#include "AddBookWindow.h"
+#include "LoanBookWindow.h"
 
 LRESULT CALLBACK MenuWndProc(HWND, UINT, WPARAM, LPARAM);
 HINSTANCE gInst;
@@ -62,7 +64,8 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             MessageBoxW(hwnd, L"Aquí se mostraría la lista de libros.", L"Listar", MB_OK);
             break;
         case 4:
-            MessageBoxW(hwnd, L"Aquí se abriría la ventana de Préstamo.", L"Prestar", MB_OK);
+        DestroyWindow(hwnd);
+        ShowLoanBookWindow(gInst, gUsername);
             break;
         case 5:
             MessageBoxW(hwnd, L"Aquí se abriría la ventana de Devolución.", L"Devolver", MB_OK);
