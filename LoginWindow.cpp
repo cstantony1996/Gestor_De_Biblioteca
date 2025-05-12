@@ -4,6 +4,7 @@
 #include "Connection.h"
 #include "MenuWindow.h"
 #include "LoginWindow.h"
+#include "resources.h"
 
 // Variables globales
 HINSTANCE hInst;
@@ -37,6 +38,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
     wc.lpfnWndProc = WndProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = L"LoginWindow";
+    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));  // Icono principal
     RegisterClassW(&wc);
 
     // Registrar clase registro
@@ -44,6 +46,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow)
     wcReg.lpfnWndProc = RegistroWndProc;
     wcReg.hInstance = hInstance;
     wcReg.lpszClassName = L"RegistroWindow";
+    wcReg.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
     RegisterClassW(&wcReg);
 
     ShowLoginWindow(hInstance);
@@ -66,6 +69,13 @@ void ShowLoginWindow(HINSTANCE hInstance) {
 
     HWND hwnd = CreateWindowW(L"LoginWindow", L"Login - Biblioteca", WS_OVERLAPPEDWINDOW,
                               CW_USEDEFAULT, CW_USEDEFAULT, 400, 250, NULL, NULL, hInst, NULL);
+
+    SendMessage(hwnd, WM_SETICON, ICON_BIG, 
+        (LPARAM)LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1)));
+    SendMessage(hwnd, WM_SETICON, ICON_SMALL,
+        (LPARAM)LoadImage(hInst, MAKEINTRESOURCE(IDI_ICON1), 
+        IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR));
+
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);
 }

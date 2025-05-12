@@ -3,6 +3,7 @@
 #include "MenuWindow.h"
 #include "StringUtils.h"
 #include "GlobalVars.h"
+#include "resources.h"
 #include <commctrl.h>
 #include <string>
 #include <libpq-fe.h>
@@ -236,7 +237,7 @@ void ShowLoanBookWindow(HINSTANCE hInstance, const wstring& username)
     wc.lpfnWndProc = LoanBookWndProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
-
+    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
     RegisterClassW(&wc);
 
     wstring title = L"Préstamo de Libros - Usuario: " + username;
@@ -248,6 +249,12 @@ void ShowLoanBookWindow(HINSTANCE hInstance, const wstring& username)
         CW_USEDEFAULT, CW_USEDEFAULT,
         575, 180,
         nullptr, nullptr, hInstance, nullptr);
+
+    SendMessage(hwnd, WM_SETICON, ICON_BIG, 
+    (LPARAM)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)));
+    SendMessage(hwnd, WM_SETICON, ICON_SMALL,
+        (LPARAM)LoadImage(hInstance, MAKEINTRESOURCE(IDI_ICON1), 
+        IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR));
 
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);

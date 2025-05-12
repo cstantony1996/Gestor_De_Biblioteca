@@ -3,6 +3,7 @@
 #include "MenuWindow.h"
 #include "StringUtils.h"
 #include "GlobalVars.h"
+#include "resources.h"
 #include <commctrl.h>
 #include <string>
 #include <vector>
@@ -163,7 +164,7 @@ void ShowAddBookWindow(HINSTANCE hInstance, const std::wstring& username) {
     wc.lpfnWndProc = AddBookWndProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = CLASS_NAME;
-
+    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
     RegisterClassW(&wc);
 
     std::wstring title = L"Agregar Libro - Usuario: " + username;
@@ -175,6 +176,12 @@ void ShowAddBookWindow(HINSTANCE hInstance, const std::wstring& username) {
         CW_USEDEFAULT, CW_USEDEFAULT, 
         575, 450, 
         nullptr, nullptr, hInstance, nullptr);
+
+    SendMessage(hwnd, WM_SETICON, ICON_BIG, 
+    (LPARAM)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)));
+    SendMessage(hwnd, WM_SETICON, ICON_SMALL,
+        (LPARAM)LoadImage(hInstance, MAKEINTRESOURCE(IDI_ICON1), 
+        IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR));
 
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);

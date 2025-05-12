@@ -3,6 +3,7 @@
 #include "LoginWindow.h"
 #include "AddBookWindow.h"
 #include "LoanBookWindow.h"
+#include "resources.h"
 
 LRESULT CALLBACK MenuWndProc(HWND, UINT, WPARAM, LPARAM);
 HINSTANCE gInst;
@@ -17,12 +18,20 @@ void ShowMenuWindow(HINSTANCE hInstance, const std::wstring& username)
     wc.lpfnWndProc = MenuWndProc;
     wc.hInstance = hInstance;
     wc.lpszClassName = L"MenuWindow";
+    HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
     RegisterClassW(&wc);
 
     std::wstring windowTitle = L"Menú Principal - Usuario: " + username;
 
     HWND hwnd = CreateWindowW(L"MenuWindow", windowTitle.c_str(), WS_OVERLAPPEDWINDOW,
                               CW_USEDEFAULT, CW_USEDEFAULT, 400, 400, NULL, NULL, hInstance, NULL);
+
+    SendMessage(hwnd, WM_SETICON, ICON_BIG, 
+        (LPARAM)LoadIcon(gInst, MAKEINTRESOURCE(IDI_ICON1)));
+    SendMessage(hwnd, WM_SETICON, ICON_SMALL,
+        (LPARAM)LoadImage(gInst, MAKEINTRESOURCE(IDI_ICON1), 
+        IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR));
+
 
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);

@@ -5,5 +5,4 @@
 #include <string>
 
 void ShowAddBookWindow(HINSTANCE hInstance, const std::wstring& username);
-
 #endif
