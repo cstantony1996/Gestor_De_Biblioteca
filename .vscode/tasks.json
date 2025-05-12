@@ -8,6 +8,7 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
+                "resources.res",
                 "Connection.cpp",
                 "UserAuth.cpp",
                 "MenuWindow.cpp",
@@ -17,7 +18,7 @@
                 "StringUtils.cpp",
                 "${file}",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}.exe",
+                "${fileDirname}/Biblioteca.exe",
                 "-I",
                 "C:/Program Files/PostgreSQL/15/include",
                 "-L",
