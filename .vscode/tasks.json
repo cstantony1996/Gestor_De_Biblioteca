@@ -8,10 +8,6 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "-std=c++17",
-    "-lshlwapi",
-    "-lole32",
-    "-static",
                 "resources.res",
                 "Connection.cpp",
                 "UserAuth.cpp",
@@ -30,7 +26,6 @@
                 "-llibpq",
                 "-municode",
                 "-mwindows",
-                "-Wl,--subsystem,windows"
             ],
             "options": {
                 "cwd": "${fileDirname}"
