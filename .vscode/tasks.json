@@ -8,6 +8,10 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
+                "-std=c++17",
+    "-lshlwapi",
+    "-lole32",
+    "-static",
                 "resources.res",
                 "Connection.cpp",
                 "UserAuth.cpp",
@@ -23,9 +27,10 @@
                 "C:/Program Files/PostgreSQL/15/include",
                 "-L",
                 "C:/Program Files/PostgreSQL/15/lib",
-                "-lpq",
+                "-llibpq",
                 "-municode",
-                "-mwindows"
+                "-mwindows",
+                "-Wl,--subsystem,windows"
             ],
             "options": {
                 "cwd": "${fileDirname}"
