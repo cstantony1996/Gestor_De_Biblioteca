@@ -12,6 +12,8 @@
 
 using namespace std;
 
+static HWND hMenuWindow = nullptr;
+
 #pragma comment(lib, "comctl32.lib")
 #pragma comment(lib, "libpq.lib")
 
@@ -145,117 +147,150 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
                 break;
             }
 
-            const char* paramValues[1] = { isbn.c_str() };
-            PGresult* res = PQexecParams(conn,
-                                         "SELECT titulo, estado FROM libros WHERE REGEXP_REPLACE(isbn, '[^0-9]', '', 'g') = $1",
-                                         1, nullptr, paramValues, nullptr, nullptr, 0);
-
-            if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
+            try
             {
-                MessageBoxW(hwnd, L"Libro no encontrado. Verifique el ISBN.", L"Error", MB_ICONERROR);
+                string username = WStringToString(currentUser);
+
+                const char* userParams[1] = { username.c_str() };
+                PGresult* res = PQexecParams(conn,
+                    "SELECT id FROM usuarios WHERE username = $1",
+                    1, nullptr, userParams, nullptr, nullptr, 0);
+
+                if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
+                {
+                    MessageBoxW(hwnd, L"Usuario no encontrado", L"Error", MB_ICONERROR);
+                    PQclear(res); PQfinish(conn);
+                    break;
+                }
+                int userId = atoi(PQgetvalue(res, 0, 0));
+                PQclear(res);
+
+                const char* bookParams[1] = { isbn.c_str() };
+                res = PQexecParams(conn,
+                    "SELECT id, titulo, estado FROM libros WHERE REGEXP_REPLACE(isbn, '[^0-9]', '', 'g') = $1",
+                    1, nullptr, bookParams, nullptr, nullptr, 0);
+
+                if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
+                {
+                    MessageBoxW(hwnd, L"Libro no encontrado. Verifique el ISBN.", L"Error", MB_ICONERROR);
+                    PQclear(res); PQfinish(conn);
+                    break;
+                }
+
+                int libroId = atoi(PQgetvalue(res, 0, 0));
+                string titulo = PQgetvalue(res, 0, 1);
+                string estado = PQgetvalue(res, 0, 2);
+                PQclear(res);
+
+                if (estado != "Disponible")
+                {
+                    MessageBoxW(hwnd, L"El libro no está disponible para préstamo.", L"Error", MB_ICONERROR);
+                    PQfinish(conn);
+                    break;
+                }
+
+                stringstream ssUserId, ssLibroId;
+                ssUserId << userId;
+                ssLibroId << libroId;
+
+                const char* prestamoParams[3] = {
+                    ssUserId.str().c_str(),
+                    ssLibroId.str().c_str(),
+                    fechaPostgres.c_str()
+                };
+
+                res = PQexecParams(conn,
+                    "INSERT INTO prestamos (usuario_id, libro_id, fecha_devolucion) VALUES ($1::int, $2::int, $3::date)",
+                    3, nullptr, prestamoParams, nullptr, nullptr, 0);
+
+                if (PQresultStatus(res) != PGRES_COMMAND_OK)
+                {
+                    MessageBoxA(hwnd, PQerrorMessage(conn), "Error al registrar préstamo", MB_ICONERROR);
+                    PQclear(res);
+                    PQfinish(conn);
+                    break;
+                }
+                PQclear(res);
+
+                res = PQexecParams(conn,
+                    "UPDATE libros SET estado = 'Prestado' WHERE id = $1",
+                    1, nullptr, &prestamoParams[1], nullptr, nullptr, 0);
+
+                if (PQresultStatus(res) != PGRES_COMMAND_OK)
+                {
+                    MessageBoxA(hwnd, PQerrorMessage(conn), "Error al actualizar libro", MB_ICONERROR);
+                    PQclear(res);
+                    PQfinish(conn);
+                    break;
+                }
+
                 PQclear(res);
                 PQfinish(conn);
-                break;
-            }
 
-            string tituloLibro = PQgetvalue(res, 0, 0);
-            string estado = PQgetvalue(res, 0, 1);
-            PQclear(res);
-
-            if (estado != "Disponible")
-            {
-                MessageBoxW(hwnd, L"El libro no está disponible para préstamo.", L"Error", MB_ICONERROR);
-                PQfinish(conn);
-                break;
-            }
-
-            string username = WStringToString(currentUser);
-            const char* insertParams[5] = {
-                isbn.c_str(),
-                tituloLibro.c_str(),
-                username.c_str(),
-                "now()",
-                fechaPostgres.c_str()
-            };
-
-            res = PQexecParams(conn,
-                               "INSERT INTO prestamos (isbn, titulo, usuario, fecha_prestamo, fecha_devolucion) "
-                               "VALUES ($1, $2, $3, $4::timestamp, $5::date)",
-                               5, nullptr, insertParams, nullptr, nullptr, 0);
-
-            if (PQresultStatus(res) != PGRES_COMMAND_OK)
-            {
-                MessageBoxA(hwnd, PQerrorMessage(conn), "Error al registrar préstamo", MB_ICONERROR);
-                PQclear(res);
-                PQfinish(conn);
-                break;
-            }
-            PQclear(res);
-
-            res = PQexecParams(conn,
-                               "UPDATE libros SET estado = 'Prestado' WHERE REGEXP_REPLACE(isbn, '[^0-9]', '', 'g') = $1",
-                               1, nullptr, paramValues, nullptr, nullptr, 0);
-
-            if (PQresultStatus(res) == PGRES_COMMAND_OK)
-            {
                 wstring mensaje = L"Préstamo registrado exitosamente\n";
-                mensaje += L"Libro: " + StringToWString(tituloLibro) + L"\n";
+                mensaje += L"Libro: " + StringToWString(titulo) + L"\n";
                 mensaje += L"Fecha devolución: " + StringToWString(fechaDevolucion);
                 MessageBoxW(hwnd, mensaje.c_str(), L"Éxito", MB_OK);
                 SetWindowTextW(hIsbnField, L"978-");
                 SetWindowTextW(hFechaDevolucionField, L"");
             }
-            else
+            catch (...)
             {
-                MessageBoxA(hwnd, PQerrorMessage(conn), "Error al actualizar estado", MB_ICONERROR);
+                MessageBoxW(hwnd, L"Ocurrió un error inesperado", L"Error", MB_ICONERROR);
+                PQfinish(conn);
             }
-
-            PQclear(res);
-            PQfinish(conn);
         }
         else if (LOWORD(wParam) == 2)
         {
-            DestroyWindow(hwnd);
-            ShowMenuWindow(GetModuleHandle(nullptr), currentUser);
+            ShowWindow(hMenuWindow, SW_SHOW); // ✅ esto ahora sí funciona
+    DestroyWindow(hwnd);
         }
         break;
 
     case WM_DESTROY:
-        PostQuitMessage(0);
+        
         break;
+
+    default:
+        return DefWindowProcW(hwnd, msg, wParam, lParam);
     }
-    return DefWindowProcW(hwnd, msg, wParam, lParam);
+    return 0;
 }
 
-void ShowLoanBookWindow(HINSTANCE hInstance, const wstring& username)
+// Función auxiliar que crea la ventana de préstamo
+void CrearVentanaPrestamo(HINSTANCE hInstance, HWND hWndMenu)
 {
-    currentUser = username;
-
-    const wchar_t CLASS_NAME[] = L"LoanBookWindow";
-
-    WNDCLASSW wc = {};
-    wc.lpfnWndProc = LoanBookWndProc;
+    WNDCLASSW wc = { 0 };
+    wc.lpszClassName = L"LoanBookWindowClass";
     wc.hInstance = hInstance;
-    wc.lpszClassName = CLASS_NAME;
-    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
+    wc.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
+    wc.lpfnWndProc = LoanBookWndProc;
+    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)); // Asegúrate de tener el ícono en resources
+
     RegisterClassW(&wc);
 
-    wstring title = L"Préstamo de Libros - Usuario: " + username;
+    wstring titulo = L"Prestar Libro - Usuario: " + currentUser;
 
-    HWND hwnd = CreateWindowW(
-        CLASS_NAME,
-        title.c_str(),
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT,
-        575, 180,
-        nullptr, nullptr, hInstance, nullptr);
+    HWND hwndLoan = CreateWindowW(wc.lpszClassName, titulo.c_str(),
+                                  WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
+                                  CW_USEDEFAULT, CW_USEDEFAULT, 575, 170,
+                                  nullptr, nullptr, hInstance, nullptr);
 
-    SendMessage(hwnd, WM_SETICON, ICON_BIG, 
-    (LPARAM)LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)));
-    SendMessage(hwnd, WM_SETICON, ICON_SMALL,
-        (LPARAM)LoadImage(hInstance, MAKEINTRESOURCE(IDI_ICON1), 
-        IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR));
+    if (hwndLoan == nullptr)
+    {
+        MessageBoxW(nullptr, L"No se pudo crear la ventana de préstamo", L"Error", MB_ICONERROR);
+        return;
+    }
 
-    ShowWindow(hwnd, SW_SHOW);
-    UpdateWindow(hwnd);
+    hMenuWindow = hWndMenu;
+    ShowWindow(hwndLoan, SW_SHOW);
+    UpdateWindow(hwndLoan);
+}
+
+// FUNCIÓN PRINCIPAL QUE DEBES DECLARAR EN LoanBookWindow.h
+void ShowLoanBookWindow(HINSTANCE hInstance, const std::wstring& username, HWND hWndMenu)
+{
+    currentUser = username;
+    CrearVentanaPrestamo(hInstance, hWndMenu); // ✅ pasar el menú
 }

@@ -16,6 +16,7 @@
                 "LoanBookWindow.cpp",
                 "GlobalVars.cpp",
                 "StringUtils.cpp",
+                "BuscarLibro.cpp",
                 "${file}",
                 "-o",
                 "${fileDirname}/Biblioteca.exe",
@@ -24,8 +25,9 @@
                 "-L",
                 "C:/Program Files/PostgreSQL/15/lib",
                 "-llibpq",
+                "-lcomctl32",
                 "-municode",
-                "-mwindows",
+                "-mwindows"
             ],
             "options": {
                 "cwd": "${fileDirname}"

@@ -3,6 +3,7 @@
 #include "LoginWindow.h"
 #include "AddBookWindow.h"
 #include "LoanBookWindow.h"
+#include "BuscarLibro.h"
 #include "resources.h"
 
 LRESULT CALLBACK MenuWndProc(HWND, UINT, WPARAM, LPARAM);
@@ -67,14 +68,15 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         ShowAddBookWindow(gInst, gUsername);
             break;
         case 2:
-            MessageBoxW(hwnd, L"Aquí se abriría la ventana de Buscar Libro.", L"Buscar", MB_OK);
+            DestroyWindow(hwnd);
+            ShowBuscarLibroWindow(gInst, gUsername);
             break;
         case 3:
             MessageBoxW(hwnd, L"Aquí se mostraría la lista de libros.", L"Listar", MB_OK);
             break;
         case 4:
-        DestroyWindow(hwnd);
-        ShowLoanBookWindow(gInst, gUsername);
+        ShowWindow(hwnd, SW_HIDE);                // 👈 solo ocultamos el menú
+    ShowLoanBookWindow(gInst, gUsername, hwnd); 
             break;
         case 5:
             MessageBoxW(hwnd, L"Aquí se abriría la ventana de Devolución.", L"Devolver", MB_OK);

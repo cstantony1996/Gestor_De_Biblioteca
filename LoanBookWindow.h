@@ -2,4 +2,4 @@
 #include <string>
 #include <Windows.h>
 
-void ShowLoanBookWindow(HINSTANCE hInstance, const std::wstring& username);
+void ShowLoanBookWindow(HINSTANCE hInstance, const std::wstring& username, HWND hWndMenu);
