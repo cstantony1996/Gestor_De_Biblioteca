@@ -10,39 +10,36 @@
 #include <ctime>
 #include <sstream>
 
-using namespace std;
-
-static HWND hMenuWindow = nullptr;
-
 #pragma comment(lib, "comctl32.lib")
 #pragma comment(lib, "libpq.lib")
 
-HWND hIsbnField;
-HWND hFechaDevolucionField;
+static HWND hMenuWindow = nullptr;
+static HWND hIsbnField;
+static HWND hFechaDevolucionField;
+static HWND hUsernameLectorField;
 
-// Convierte fecha DD-MM-YYYY a YYYY-MM-DD
-string ConvertirFechaFormatoPostgres(const string& fechaStr)
+std::string ConvertirFechaFormatoPostgres(const std::string& fechaStr)
 {
-    int dia, mes, año;
-    if (sscanf(fechaStr.c_str(), "%d-%d-%d", &dia, &mes, &año) != 3)
+    int dia, mes, anio;
+    if (sscanf(fechaStr.c_str(), "%d-%d-%d", &dia, &mes, &anio) != 3)
         return "";
 
     char buffer[11];
-    snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d", año, mes, dia);
-    return string(buffer);
+    snprintf(buffer, sizeof(buffer), "%04d-%02d-%02d", anio, mes, dia);
+    return std::string(buffer);
 }
 
-bool ValidarFechaDevolucion(HWND hwnd, const string& fechaStr)
+bool ValidarFechaDevolucion(HWND hwnd, const std::string& fechaStr)
 {
-    int dia, mes, año;
-    if (sscanf(fechaStr.c_str(), "%d-%d-%d", &dia, &mes, &año) != 3)
+    int dia, mes, anio;
+    if (sscanf(fechaStr.c_str(), "%d-%d-%d", &dia, &mes, &anio) != 3)
     {
         MessageBoxW(hwnd, L"Formato de fecha inválido. Use DD-MM-YYYY", L"Error", MB_ICONERROR);
         return false;
     }
 
     tm fechaDevolucion = {};
-    fechaDevolucion.tm_year = año - 1900;
+    fechaDevolucion.tm_year = anio - 1900;
     fechaDevolucion.tm_mon = mes - 1;
     fechaDevolucion.tm_mday = dia;
 
@@ -58,9 +55,9 @@ bool ValidarFechaDevolucion(HWND hwnd, const string& fechaStr)
     return true;
 }
 
-string ProcesarISBN(HWND hwnd, const wstring& isbnW)
+std::string ProcesarISBN(HWND hwnd, const std::wstring& isbnW)
 {
-    wstring cleanIsbn;
+    std::wstring cleanIsbn;
     for (wchar_t c : isbnW)
         if (iswdigit(c))
             cleanIsbn += c;
@@ -100,9 +97,16 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
                                               WS_VISIBLE | WS_CHILD | WS_BORDER,
                                               300, 50, 200, 20, hwnd, nullptr, nullptr, nullptr);
 
+        CreateWindowW(L"STATIC", L"Username del lector:",
+                      WS_VISIBLE | WS_CHILD, 20, 80, 280, 20, hwnd, nullptr, nullptr, nullptr);
+
+        hUsernameLectorField = CreateWindowW(L"EDIT", L"",
+                                             WS_VISIBLE | WS_CHILD | WS_BORDER,
+                                             300, 80, 200, 20, hwnd, nullptr, nullptr, nullptr);
+
         const int BUTTON_WIDTH = 150;
         const int BUTTON_HEIGHT = 30;
-        const int BUTTON_Y = 90;
+        const int BUTTON_Y = 120;
         const int TOTAL_BUTTONS_WIDTH = 2 * BUTTON_WIDTH + 20;
         const int START_X = (575 - TOTAL_BUTTONS_WIDTH) / 2;
 
@@ -121,21 +125,31 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         {
             wchar_t isbnBuffer[256];
             GetWindowTextW(hIsbnField, isbnBuffer, 256);
-            wstring isbnW(isbnBuffer);
+            std::wstring isbnW(isbnBuffer);
 
-            string isbn = ProcesarISBN(hwnd, isbnW);
+            std::string isbn = ProcesarISBN(hwnd, isbnW);
             if (isbn.empty()) break;
 
             wchar_t fechaBuffer[256];
             GetWindowTextW(hFechaDevolucionField, fechaBuffer, 256);
-            string fechaDevolucion = WStringToString(fechaBuffer);
+            std::string fechaDevolucion = WStringToString(fechaBuffer);
 
             if (!ValidarFechaDevolucion(hwnd, fechaDevolucion)) break;
 
-            string fechaPostgres = ConvertirFechaFormatoPostgres(fechaDevolucion);
+            std::string fechaPostgres = ConvertirFechaFormatoPostgres(fechaDevolucion);
             if (fechaPostgres.empty())
             {
                 MessageBoxW(hwnd, L"Error al convertir la fecha", L"Error", MB_ICONERROR);
+                break;
+            }
+
+            wchar_t lectorBuffer[256];
+            GetWindowTextW(hUsernameLectorField, lectorBuffer, 256);
+            std::string lectorUsername = WStringToString(lectorBuffer);
+
+            if (lectorUsername.empty())
+            {
+                MessageBoxW(hwnd, L"Ingrese el username del lector.", L"Error", MB_ICONERROR);
                 break;
             }
 
@@ -147,108 +161,113 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
                 break;
             }
 
-            try
+            std::string bibliotecarioUsername = WStringToString(currentUser);
+            const char* biblioParams[1] = { bibliotecarioUsername.c_str() };
+
+            PGresult* res = PQexecParams(conn,
+                "SELECT id FROM usuarios WHERE username = $1 AND rol = 'bibliotecario'",
+                1, nullptr, biblioParams, nullptr, nullptr, 0);
+
+            if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
             {
-                string username = WStringToString(currentUser);
-
-                const char* userParams[1] = { username.c_str() };
-                PGresult* res = PQexecParams(conn,
-                    "SELECT id FROM usuarios WHERE username = $1",
-                    1, nullptr, userParams, nullptr, nullptr, 0);
-
-                if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
-                {
-                    MessageBoxW(hwnd, L"Usuario no encontrado", L"Error", MB_ICONERROR);
-                    PQclear(res); PQfinish(conn);
-                    break;
-                }
-                int userId = atoi(PQgetvalue(res, 0, 0));
-                PQclear(res);
-
-                const char* bookParams[1] = { isbn.c_str() };
-                res = PQexecParams(conn,
-                    "SELECT id, titulo, estado FROM libros WHERE REGEXP_REPLACE(isbn, '[^0-9]', '', 'g') = $1",
-                    1, nullptr, bookParams, nullptr, nullptr, 0);
-
-                if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
-                {
-                    MessageBoxW(hwnd, L"Libro no encontrado. Verifique el ISBN.", L"Error", MB_ICONERROR);
-                    PQclear(res); PQfinish(conn);
-                    break;
-                }
-
-                int libroId = atoi(PQgetvalue(res, 0, 0));
-                string titulo = PQgetvalue(res, 0, 1);
-                string estado = PQgetvalue(res, 0, 2);
-                PQclear(res);
-
-                if (estado != "Disponible")
-                {
-                    MessageBoxW(hwnd, L"El libro no está disponible para préstamo.", L"Error", MB_ICONERROR);
-                    PQfinish(conn);
-                    break;
-                }
-
-                stringstream ssUserId, ssLibroId;
-                ssUserId << userId;
-                ssLibroId << libroId;
-
-                const char* prestamoParams[3] = {
-                    ssUserId.str().c_str(),
-                    ssLibroId.str().c_str(),
-                    fechaPostgres.c_str()
-                };
-
-                res = PQexecParams(conn,
-                    "INSERT INTO prestamos (usuario_id, libro_id, fecha_devolucion) VALUES ($1::int, $2::int, $3::date)",
-                    3, nullptr, prestamoParams, nullptr, nullptr, 0);
-
-                if (PQresultStatus(res) != PGRES_COMMAND_OK)
-                {
-                    MessageBoxA(hwnd, PQerrorMessage(conn), "Error al registrar préstamo", MB_ICONERROR);
-                    PQclear(res);
-                    PQfinish(conn);
-                    break;
-                }
-                PQclear(res);
-
-                res = PQexecParams(conn,
-                    "UPDATE libros SET estado = 'Prestado' WHERE id = $1",
-                    1, nullptr, &prestamoParams[1], nullptr, nullptr, 0);
-
-                if (PQresultStatus(res) != PGRES_COMMAND_OK)
-                {
-                    MessageBoxA(hwnd, PQerrorMessage(conn), "Error al actualizar libro", MB_ICONERROR);
-                    PQclear(res);
-                    PQfinish(conn);
-                    break;
-                }
-
-                PQclear(res);
-                PQfinish(conn);
-
-                wstring mensaje = L"Préstamo registrado exitosamente\n";
-                mensaje += L"Libro: " + StringToWString(titulo) + L"\n";
-                mensaje += L"Fecha devolución: " + StringToWString(fechaDevolucion);
-                MessageBoxW(hwnd, mensaje.c_str(), L"Éxito", MB_OK);
-                SetWindowTextW(hIsbnField, L"978-");
-                SetWindowTextW(hFechaDevolucionField, L"");
+                MessageBoxW(hwnd, L"Error: El usuario actual no es un bibliotecario válido.", L"Error", MB_ICONERROR);
+                PQclear(res); PQfinish(conn);
+                break;
             }
-            catch (...)
+
+            int bibliotecarioId = atoi(PQgetvalue(res, 0, 0));
+            PQclear(res);
+
+            const char* lectorParams[1] = { lectorUsername.c_str() };
+
+            res = PQexecParams(conn,
+                "SELECT id FROM usuarios WHERE username = $1 AND rol = 'lector'",
+                1, nullptr, lectorParams, nullptr, nullptr, 0);
+
+            if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
             {
-                MessageBoxW(hwnd, L"Ocurrió un error inesperado", L"Error", MB_ICONERROR);
-                PQfinish(conn);
+                MessageBoxW(hwnd, L"Lector no encontrado o no tiene rol 'lector'.", L"Error", MB_ICONERROR);
+                PQclear(res); PQfinish(conn);
+                break;
             }
+
+            int lectorId = atoi(PQgetvalue(res, 0, 0));
+            PQclear(res);
+
+            PGresult* resLibro = PQexecParams(conn,
+                "SELECT id, titulo, estado FROM libros WHERE REGEXP_REPLACE(isbn, '[^0-9]', '', 'g') = $1",
+                1, nullptr, (const char*[]) { isbn.c_str() }, nullptr, nullptr, 0);
+
+            if (PQresultStatus(resLibro) != PGRES_TUPLES_OK || PQntuples(resLibro) == 0)
+            {
+                MessageBoxW(hwnd, L"Libro no encontrado", L"Error", MB_ICONERROR);
+                PQclear(resLibro); PQfinish(conn);
+                break;
+            }
+
+            int libroId = atoi(PQgetvalue(resLibro, 0, 0));
+            std::string titulo = PQgetvalue(resLibro, 0, 1);
+            std::string estado = PQgetvalue(resLibro, 0, 2);
+            PQclear(resLibro);
+
+            if (estado != "Disponible")
+            {
+                MessageBoxW(hwnd, L"El libro no está disponible", L"Error", MB_ICONERROR);
+                PQfinish(conn);
+                break;
+            }
+
+            const char* prestamoParams[4] = {
+                std::to_string(lectorId).c_str(),
+                std::to_string(libroId).c_str(),
+                fechaPostgres.c_str(),
+                std::to_string(bibliotecarioId).c_str()
+            };
+
+            PGresult* insertRes = PQexecParams(conn,
+                "INSERT INTO prestamos (usuario_id, libro_id, fecha_devolucion, id_bibliotecario) VALUES ($1::int, $2::int, $3::date, $4::int)",
+                4, nullptr, prestamoParams, nullptr, nullptr, 0);
+
+            if (PQresultStatus(insertRes) != PGRES_COMMAND_OK)
+            {
+                MessageBoxA(hwnd, PQerrorMessage(conn), "Error al registrar préstamo", MB_ICONERROR);
+                PQclear(insertRes); PQfinish(conn);
+                break;
+            }
+
+            PQclear(insertRes);
+
+            PGresult* updateRes = PQexecParams(conn,
+                "UPDATE libros SET estado = 'Prestado' WHERE id = $1",
+                1, nullptr, (const char*[]) { std::to_string(libroId).c_str() }, nullptr, nullptr, 0);
+
+            if (PQresultStatus(updateRes) != PGRES_COMMAND_OK)
+            {
+                MessageBoxA(hwnd, PQerrorMessage(conn), "Error al actualizar estado del libro", MB_ICONERROR);
+                PQclear(updateRes); PQfinish(conn);
+                break;
+            }
+
+            PQclear(updateRes);
+            PQfinish(conn);
+
+            std::wstring mensaje = L"Préstamo registrado exitosamente\n";
+            mensaje += L"Libro: " + StringToWString(titulo) + L"\n";
+            mensaje += L"Fecha devolución: " + StringToWString(fechaDevolucion);
+            MessageBoxW(hwnd, mensaje.c_str(), L"Éxito", MB_OK);
+            SetWindowTextW(hIsbnField, L"978-");
+            SetWindowTextW(hFechaDevolucionField, L"");
+            SetWindowTextW(hUsernameLectorField, L"");
         }
         else if (LOWORD(wParam) == 2)
         {
-            ShowWindow(hMenuWindow, SW_SHOW); // ✅ esto ahora sí funciona
-    DestroyWindow(hwnd);
+            ShowWindow(hMenuWindow, SW_SHOW);
+            DestroyWindow(hwnd);
         }
         break;
 
     case WM_DESTROY:
-        
+    PostQuitMessage(0);
         break;
 
     default:
@@ -257,7 +276,6 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
     return 0;
 }
 
-// Función auxiliar que crea la ventana de préstamo
 void CrearVentanaPrestamo(HINSTANCE hInstance, HWND hWndMenu)
 {
     WNDCLASSW wc = { 0 };
@@ -266,15 +284,15 @@ void CrearVentanaPrestamo(HINSTANCE hInstance, HWND hWndMenu)
     wc.hbrBackground = GetSysColorBrush(COLOR_3DFACE);
     wc.lpfnWndProc = LoanBookWndProc;
     wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)); // Asegúrate de tener el ícono en resources
+    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
 
     RegisterClassW(&wc);
 
-    wstring titulo = L"Prestar Libro - Usuario: " + currentUser;
+    std::wstring titulo = L"Prestar Libro - Usuario: " + currentUser;
 
     HWND hwndLoan = CreateWindowW(wc.lpszClassName, titulo.c_str(),
                                   WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME,
-                                  CW_USEDEFAULT, CW_USEDEFAULT, 575, 170,
+                                  CW_USEDEFAULT, CW_USEDEFAULT, 575, 200,
                                   nullptr, nullptr, hInstance, nullptr);
 
     if (hwndLoan == nullptr)
@@ -288,9 +306,8 @@ void CrearVentanaPrestamo(HINSTANCE hInstance, HWND hWndMenu)
     UpdateWindow(hwndLoan);
 }
 
-// FUNCIÓN PRINCIPAL QUE DEBES DECLARAR EN LoanBookWindow.h
 void ShowLoanBookWindow(HINSTANCE hInstance, const std::wstring& username, HWND hWndMenu)
 {
     currentUser = username;
-    CrearVentanaPrestamo(hInstance, hWndMenu); // ✅ pasar el menú
+    CrearVentanaPrestamo(hInstance, hWndMenu);
 }
