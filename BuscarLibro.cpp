@@ -2,26 +2,19 @@
 #include <string>
 #include <libpq-fe.h>
 #include <commctrl.h>
-#include <stdexcept>
 #include "resources.h"
+#include <stdexcept>
 #pragma comment(lib, "comctl32.lib")
 
 #include "MenuWindow.h"
 #include "BuscarLibro.h"
+#include "StringUtils.h"  // <-- Incluye el header donde está Utf8ToWstring
 
 LRESULT CALLBACK BuscarLibroWndProc(HWND, UINT, WPARAM, LPARAM);
 HINSTANCE gBuscarInst;
 std::wstring gBuscarUsername;
 
-std::wstring Utf8ToWstring(const std::string& str)
-{
-    if (str.empty()) return L"";
-    int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), NULL, 0);
-    if (size_needed <= 0) return L"(error)";
-    std::wstring wstr(size_needed, 0);
-    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), (int)str.length(), &wstr[0], size_needed);
-    return wstr;
-}
+// Ya NO defines Utf8ToWstring aquí, se usa la que está en StringUtils.cpp
 
 void ShowBuscarLibroWindow(HINSTANCE hInstance, const std::wstring& username)
 {
@@ -32,13 +25,12 @@ void ShowBuscarLibroWindow(HINSTANCE hInstance, const std::wstring& username)
     InitCommonControlsEx(&icex);
 
     WNDCLASSW wc = {};
-wc.lpfnWndProc = BuscarLibroWndProc;
-wc.hInstance = hInstance;
-wc.lpszClassName = L"BuscarLibroWindow";
-wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)); // Icono principal
+    wc.lpfnWndProc = BuscarLibroWndProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = L"BuscarLibroWindow";
+    wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)); // Icono principal
 wc.hCursor = LoadCursor(NULL, IDC_ARROW); // Opcional
-RegisterClassW(&wc);
-
+    RegisterClassW(&wc);
 
     std::wstring windowTitle = L"Buscar Libro - Usuario: " + gBuscarUsername;
 
@@ -68,9 +60,9 @@ void BuscarLibroEnDB(HWND hwnd)
             return;
         }
 
-        std::string texto(textoW.begin(), textoW.end());
+        std::string texto = WStringToString(textoW); // mejor usar la función de StringUtils
 
-        PGconn* conn = PQconnectdb("host=localhost dbname=postgres user=postgres password=Myroot");
+        PGconn* conn = PQconnectdb("host=localhost dbname=postgres user=postgres password=asdf1234");
 
         if (!conn) {
             MessageBoxW(hwnd, L"Error al crear conexión con PostgreSQL.", L"Conexión fallida", MB_OK | MB_ICONERROR);
