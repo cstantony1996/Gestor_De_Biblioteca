@@ -5,6 +5,7 @@
 #include "LoanBookWindow.h"
 #include "BuscarLibro.h"
 #include "ReturnBookWindow.h"
+#include "ListarLibrosWindow.h"
 #include "resources.h"
 
 LRESULT CALLBACK MenuWndProc(HWND, UINT, WPARAM, LPARAM);
@@ -73,7 +74,8 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             ShowBuscarLibroWindow(gInst, gUsername);
             break;
         case 3:
-            MessageBoxW(hwnd, L"Aquí se mostraría la lista de libros.", L"Listar", MB_OK);
+            DestroyWindow(hwnd);
+            ShowListarLibrosWindow(gInst, gUsername);
             break;
         case 4:
         ShowLoanBookWindow(gInst, gUsername, hwnd); // pasa hwnd como ventana padre
