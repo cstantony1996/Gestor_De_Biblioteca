@@ -261,13 +261,12 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         }
         else if (LOWORD(wParam) == 2)
         {
-            ShowWindow(hMenuWindow, SW_SHOW);
             DestroyWindow(hwnd);
         }
         break;
 
     case WM_DESTROY:
-    PostQuitMessage(0);
+         ShowWindow(hMenuWindow, SW_SHOW);  
         break;
 
     default:
@@ -302,6 +301,7 @@ void CrearVentanaPrestamo(HINSTANCE hInstance, HWND hWndMenu)
     }
 
     hMenuWindow = hWndMenu;
+    ShowWindow(hMenuWindow, SW_HIDE);
     ShowWindow(hwndLoan, SW_SHOW);
     UpdateWindow(hwndLoan);
 }

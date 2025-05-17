@@ -76,8 +76,8 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             MessageBoxW(hwnd, L"Aquí se mostraría la lista de libros.", L"Listar", MB_OK);
             break;
         case 4:
-        DestroyWindow(hwnd);                // 👈 solo ocultamos el menú
-        ShowLoanBookWindow(gInst, gUsername, hwnd); 
+        ShowLoanBookWindow(gInst, gUsername, hwnd); // pasa hwnd como ventana padre
+    ShowWindow(hwnd, SW_HIDE);
             break;
         case 5:
             DestroyWindow(hwnd);                          // Oculta el menú
