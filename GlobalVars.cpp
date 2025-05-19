@@ -1,3 +1,9 @@
+#include "byte_fix.h" 
+
 #include "GlobalVars.h"
 
-std::wstring currentUser;  // Definición
+using namespace std;
+
+wstring currentUser;  // Definición
+bool emailHasPlaceholder = true;  
+bool passwordHasPlaceholder = true;

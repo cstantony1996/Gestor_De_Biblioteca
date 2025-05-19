@@ -1,19 +1,21 @@
-#include <windows.h>
+#include "byte_fix.h" 
+#include "resources.h"
+#include "ListarLibrosWindow.h"
+#include "StringUtils.h"
+#include "MenuWindow.h"
+#include "WindowUtils.h"
 #include <string>
 #include <libpq-fe.h>
 #include <commctrl.h>
 #include <stdexcept>
 
-#include "resources.h"
-#include "ListarLibrosWindow.h"
-#include "StringUtils.h"
-#include "MenuWindow.h"
-
 #pragma comment(lib, "comctl32.lib")
+
+using namespace std;
 
 LRESULT CALLBACK ListarLibrosWndProc(HWND, UINT, WPARAM, LPARAM);
 HINSTANCE gListarInst;
-std::wstring gListarUsername;
+wstring gListarUsername;
 
 enum class OrdenLibros {
     TITULO,
@@ -22,7 +24,7 @@ enum class OrdenLibros {
 
 void CargarLibrosDesdeDB(HWND hwnd, OrdenLibros orden);
 
-void ShowListarLibrosWindow(HINSTANCE hInstance, const std::wstring& username)
+void ShowListarLibrosWindow(HINSTANCE hInstance, const wstring& username)
 {
     gListarInst = hInstance;
     gListarUsername = username;
@@ -38,10 +40,10 @@ void ShowListarLibrosWindow(HINSTANCE hInstance, const std::wstring& username)
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     RegisterClassW(&wc);
 
-    std::wstring title = L"Lista de Libros - Usuario: " + username;
-    HWND hwnd = CreateWindowW(L"ListarLibrosWindow", title.c_str(), WS_OVERLAPPEDWINDOW,
-                              CW_USEDEFAULT, CW_USEDEFAULT, 800, 500, NULL, NULL, hInstance, NULL);
+    wstring title = L"Lista de Libros - Usuario: " + username;
+    HWND hwnd = CreateWindowW(L"ListarLibrosWindow", title.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 800, 500, NULL, NULL, hInstance, NULL);
 
+    WindowUtils::CenterWindow(hwnd);
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);
 
@@ -60,7 +62,7 @@ void CargarLibrosDesdeDB(HWND hwnd, OrdenLibros orden)
 
     if (!conn || PQstatus(conn) != CONNECTION_OK)
     {
-        std::wstring werr = Utf8ToWstring(PQerrorMessage(conn));
+        wstring werr = Utf8ToWstring(PQerrorMessage(conn));
         MessageBoxW(hwnd, (L"Error al conectar:\n" + werr).c_str(), L"Error", MB_OK | MB_ICONERROR);
         if (conn) PQfinish(conn);
         return;
@@ -68,20 +70,20 @@ void CargarLibrosDesdeDB(HWND hwnd, OrdenLibros orden)
 
     // Construimos la consulta con ORDER BY según orden seleccionado
     const char* queryBase = "SELECT titulo, autor, isbn, editorial, año, materia, estado FROM libros ORDER BY ";
-    std::string query;
+    string query;
 
     if (orden == OrdenLibros::TITULO) {
-        query = std::string(queryBase) + "titulo ASC;";
+        query = string(queryBase) + "titulo ASC;";
     }
     else { // AUTOR
-        query = std::string(queryBase) + "autor ASC;";
+        query = string(queryBase) + "autor ASC;";
     }
 
     PGresult* res = PQexec(conn, query.c_str());
 
     if (!res || PQresultStatus(res) != PGRES_TUPLES_OK)
     {
-        std::wstring werr = Utf8ToWstring(PQresultErrorMessage(res));
+        wstring werr = Utf8ToWstring(PQresultErrorMessage(res));
         MessageBoxW(hwnd, (L"Error en la consulta:\n" + werr).c_str(), L"Consulta fallida", MB_OK | MB_ICONERROR);
         if (res) PQclear(res);
         PQfinish(conn);
@@ -99,13 +101,13 @@ void CargarLibrosDesdeDB(HWND hwnd, OrdenLibros orden)
 
     for (int i = 0; i < rows; ++i)
     {
-        std::wstring wTitulo    = Utf8ToWstring(PQgetvalue(res, i, 0));
-        std::wstring wAutor     = Utf8ToWstring(PQgetvalue(res, i, 1));
-        std::wstring wIsbn      = Utf8ToWstring(PQgetvalue(res, i, 2));
-        std::wstring wEditorial = Utf8ToWstring(PQgetvalue(res, i, 3));
-        std::wstring wAnio      = Utf8ToWstring(PQgetvalue(res, i, 4));
-        std::wstring wMateria   = Utf8ToWstring(PQgetvalue(res, i, 5));
-        std::wstring wEstado    = Utf8ToWstring(PQgetvalue(res, i, 6));
+        wstring wTitulo    = Utf8ToWstring(PQgetvalue(res, i, 0));
+        wstring wAutor     = Utf8ToWstring(PQgetvalue(res, i, 1));
+        wstring wIsbn      = Utf8ToWstring(PQgetvalue(res, i, 2));
+        wstring wEditorial = Utf8ToWstring(PQgetvalue(res, i, 3));
+        wstring wAnio      = Utf8ToWstring(PQgetvalue(res, i, 4));
+        wstring wMateria   = Utf8ToWstring(PQgetvalue(res, i, 5));
+        wstring wEstado    = Utf8ToWstring(PQgetvalue(res, i, 6));
 
         LVITEMW item = {};
         item.mask = LVIF_TEXT;

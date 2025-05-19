@@ -1,5 +1,10 @@
 #pragma once
+
+#include "byte_fix.h" 
+
 #include <windows.h>
 #include <string>
 
-void ShowBuscarLibroWindow(HINSTANCE hInstance, const std::wstring& username);
+using namespace std;
+
+void ShowBuscarLibroWindow(HINSTANCE hInstance, const wstring& username);

@@ -1,27 +1,29 @@
-#include <windows.h>
+#include "byte_fix.h" 
+#include "resources.h"
+#include "WindowUtils.h"
+#include "MenuWindow.h"
+#include "BuscarLibro.h"
+#include "StringUtils.h"
 #include <string>
 #include <libpq-fe.h>
 #include <commctrl.h>
-#include "resources.h"
 #include <stdexcept>
 #pragma comment(lib, "comctl32.lib")
 
-#include "MenuWindow.h"
-#include "BuscarLibro.h"
-#include "StringUtils.h"  // <-- Incluye el header donde está Utf8ToWstring
+using namespace std;
 
 LRESULT CALLBACK BuscarLibroWndProc(HWND, UINT, WPARAM, LPARAM);
 HINSTANCE gBuscarInst;
-std::wstring gBuscarUsername;
+wstring gBuscarUsername;
 
 // Ya NO defines Utf8ToWstring aquí, se usa la que está en StringUtils.cpp
 
-void ShowBuscarLibroWindow(HINSTANCE hInstance, const std::wstring& username)
+void ShowBuscarLibroWindow(HINSTANCE hInstance, const wstring &username)
 {
     gBuscarInst = hInstance;
     gBuscarUsername = username;
 
-    INITCOMMONCONTROLSEX icex = { sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES };
+    INITCOMMONCONTROLSEX icex = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES};
     InitCommonControlsEx(&icex);
 
     WNDCLASSW wc = {};
@@ -29,14 +31,14 @@ void ShowBuscarLibroWindow(HINSTANCE hInstance, const std::wstring& username)
     wc.hInstance = hInstance;
     wc.lpszClassName = L"BuscarLibroWindow";
     wc.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1)); // Icono principal
-wc.hCursor = LoadCursor(NULL, IDC_ARROW); // Opcional
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);                   // Opcional
     RegisterClassW(&wc);
 
-    std::wstring windowTitle = L"Buscar Libro - Usuario: " + gBuscarUsername;
+    wstring windowTitle = L"Buscar Libro - Usuario: " + gBuscarUsername;
 
-HWND hwnd = CreateWindowW(L"BuscarLibroWindow", windowTitle.c_str(), WS_OVERLAPPEDWINDOW,
-                              CW_USEDEFAULT, CW_USEDEFAULT, 800, 500, NULL, NULL, hInstance, NULL);
+    HWND hwnd = CreateWindowW(L"BuscarLibroWindow", windowTitle.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 800, 500, NULL, NULL, hInstance, NULL);
 
+    WindowUtils::CenterWindow(hwnd);
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);
 
@@ -50,39 +52,45 @@ HWND hwnd = CreateWindowW(L"BuscarLibroWindow", windowTitle.c_str(), WS_OVERLAPP
 
 void BuscarLibroEnDB(HWND hwnd)
 {
-    try {
+    try
+    {
         wchar_t buffer[256];
         GetWindowTextW(GetDlgItem(hwnd, 1), buffer, 256);
-        std::wstring textoW(buffer);
+        wstring textoW(buffer);
 
-        if (textoW.empty()) {
+        if (textoW.empty())
+        {
             MessageBoxW(hwnd, L"Por favor, introduzca un criterio de búsqueda.", L"Campo vacío", MB_OK | MB_ICONWARNING);
             return;
         }
 
-        std::string texto = WStringToString(textoW); // mejor usar la función de StringUtils
+        string texto = WStringToString(textoW); // mejor usar la función de StringUtils
 
-        PGconn* conn = PQconnectdb("host=localhost dbname=postgres user=postgres password=asdf1234");
+        PGconn *conn = PQconnectdb("host=localhost dbname=postgres user=postgres password=Myroot");
 
-        if (!conn) {
+        if (!conn)
+        {
             MessageBoxW(hwnd, L"Error al crear conexión con PostgreSQL.", L"Conexión fallida", MB_OK | MB_ICONERROR);
             return;
         }
 
         if (PQstatus(conn) != CONNECTION_OK)
         {
-            std::wstring werr = Utf8ToWstring(PQerrorMessage(conn));
+            wstring werr = Utf8ToWstring(PQerrorMessage(conn));
             MessageBoxW(hwnd, (L"Conexión fallida:\n" + werr).c_str(), L"Error de conexión", MB_OK | MB_ICONERROR);
             PQfinish(conn);
             return;
         }
 
         int criterio;
-        if (IsDlgButtonChecked(hwnd, 4)) criterio = 4;
-        else if (IsDlgButtonChecked(hwnd, 5)) criterio = 5;
-        else criterio = 6;
+        if (IsDlgButtonChecked(hwnd, 4))
+            criterio = 4;
+        else if (IsDlgButtonChecked(hwnd, 5))
+            criterio = 5;
+        else
+            criterio = 6;
 
-        std::string query;
+        string query;
         if (criterio == 4)
             query = "SELECT titulo, autor, isbn, editorial, año, materia, estado FROM libros WHERE titulo ILIKE '%" + texto + "%';";
         else if (criterio == 5)
@@ -90,19 +98,21 @@ void BuscarLibroEnDB(HWND hwnd)
         else
             query = "SELECT titulo, autor, isbn, editorial, año, materia, estado FROM libros WHERE titulo ILIKE '%" + texto + "%' OR autor ILIKE '%" + texto + "%';";
 
-        PGresult* res = PQexec(conn, query.c_str());
+        PGresult *res = PQexec(conn, query.c_str());
 
         if (!res || PQresultStatus(res) != PGRES_TUPLES_OK)
         {
-            std::wstring werr = Utf8ToWstring(PQresultErrorMessage(res));
+            wstring werr = Utf8ToWstring(PQresultErrorMessage(res));
             MessageBoxW(hwnd, (L"Error en la consulta:\n" + werr).c_str(), L"Error de consulta", MB_OK | MB_ICONERROR);
-            if (res) PQclear(res);
+            if (res)
+                PQclear(res);
             PQfinish(conn);
             return;
         }
 
         HWND hListView = GetDlgItem(hwnd, 10);
-        if (!hListView) {
+        if (!hListView)
+        {
             MessageBoxW(hwnd, L"No se pudo obtener el control ListView.", L"Error de interfaz", MB_OK | MB_ICONERROR);
             PQclear(res);
             PQfinish(conn);
@@ -113,19 +123,20 @@ void BuscarLibroEnDB(HWND hwnd)
 
         int rows = PQntuples(res);
 
-        if (rows == 0) {
+        if (rows == 0)
+        {
             MessageBoxW(hwnd, L"No se encontró información.", L"Sin resultados", MB_OK | MB_ICONINFORMATION);
         }
 
         for (int i = 0; i < rows; ++i)
         {
-            std::wstring wTitulo    = Utf8ToWstring(PQgetvalue(res, i, 0));
-            std::wstring wAutor     = Utf8ToWstring(PQgetvalue(res, i, 1));
-            std::wstring wIsbn      = Utf8ToWstring(PQgetvalue(res, i, 2));
-            std::wstring wEditorial = Utf8ToWstring(PQgetvalue(res, i, 3));
-            std::wstring wAnio      = Utf8ToWstring(PQgetvalue(res, i, 4));
-            std::wstring wMateria   = Utf8ToWstring(PQgetvalue(res, i, 5));
-            std::wstring wEstado    = Utf8ToWstring(PQgetvalue(res, i, 6));
+            wstring wTitulo = Utf8ToWstring(PQgetvalue(res, i, 0));
+            wstring wAutor = Utf8ToWstring(PQgetvalue(res, i, 1));
+            wstring wIsbn = Utf8ToWstring(PQgetvalue(res, i, 2));
+            wstring wEditorial = Utf8ToWstring(PQgetvalue(res, i, 3));
+            wstring wAnio = Utf8ToWstring(PQgetvalue(res, i, 4));
+            wstring wMateria = Utf8ToWstring(PQgetvalue(res, i, 5));
+            wstring wEstado = Utf8ToWstring(PQgetvalue(res, i, 6));
 
             LVITEMW lvi = {};
             lvi.mask = LVIF_TEXT;
@@ -144,12 +155,13 @@ void BuscarLibroEnDB(HWND hwnd)
         PQclear(res);
         PQfinish(conn);
     }
-    catch (const std::exception& e)
+    catch (const exception &e)
     {
-        std::wstring msg = L"Excepción: " + Utf8ToWstring(e.what());
+        wstring msg = L"Excepción: " + Utf8ToWstring(e.what());
         MessageBoxW(hwnd, msg.c_str(), L"Error inesperado", MB_OK | MB_ICONERROR);
     }
-    catch (...) {
+    catch (...)
+    {
         MessageBoxW(hwnd, L"Ocurrió un error desconocido.", L"Error crítico", MB_OK | MB_ICONERROR);
     }
 }
@@ -184,31 +196,38 @@ LRESULT CALLBACK BuscarLibroWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
         CheckRadioButton(hwnd, 4, 6, 6);
 
         HWND hListView = CreateWindowW(WC_LISTVIEW, NULL,
-            WS_VISIBLE | WS_CHILD | LVS_REPORT | LVS_SINGLESEL | WS_BORDER,
-            20, 200, 740, 200, hwnd, (HMENU)10, gBuscarInst, NULL);
+                                       WS_VISIBLE | WS_CHILD | LVS_REPORT | LVS_SINGLESEL | WS_BORDER,
+                                       20, 200, 740, 200, hwnd, (HMENU)10, gBuscarInst, NULL);
 
         LVCOLUMNW lvc = {};
         lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
 
-        lvc.pszText = (LPWSTR)L"Título"; lvc.cx = 120;
+        lvc.pszText = (LPWSTR)L"Título";
+        lvc.cx = 120;
         ListView_InsertColumn(hListView, 0, &lvc);
 
-        lvc.pszText = (LPWSTR)L"Autor"; lvc.cx = 100;
+        lvc.pszText = (LPWSTR)L"Autor";
+        lvc.cx = 100;
         ListView_InsertColumn(hListView, 1, &lvc);
 
-        lvc.pszText = (LPWSTR)L"ISBN"; lvc.cx = 120;
+        lvc.pszText = (LPWSTR)L"ISBN";
+        lvc.cx = 120;
         ListView_InsertColumn(hListView, 2, &lvc);
 
-        lvc.pszText = (LPWSTR)L"Editorial"; lvc.cx = 100;
+        lvc.pszText = (LPWSTR)L"Editorial";
+        lvc.cx = 100;
         ListView_InsertColumn(hListView, 3, &lvc);
 
-        lvc.pszText = (LPWSTR)L"Año"; lvc.cx = 50;
+        lvc.pszText = (LPWSTR)L"Año";
+        lvc.cx = 50;
         ListView_InsertColumn(hListView, 4, &lvc);
 
-        lvc.pszText = (LPWSTR)L"Materia"; lvc.cx = 100;
+        lvc.pszText = (LPWSTR)L"Materia";
+        lvc.cx = 100;
         ListView_InsertColumn(hListView, 5, &lvc);
 
-        lvc.pszText = (LPWSTR)L"Estado"; lvc.cx = 100;
+        lvc.pszText = (LPWSTR)L"Estado";
+        lvc.cx = 100;
         ListView_InsertColumn(hListView, 6, &lvc);
     }
     break;

@@ -1,18 +1,21 @@
 #ifndef STRINGUTILS_H
 #define STRINGUTILS_H
 
+#include "byte_fix.h" 
 #include <string>
 
-// Convierte std::wstring a std::string (UTF-8)
-std::string WStringToString(const std::wstring& wstr);
+using namespace std;
 
-// Convierte std::string (UTF-8) a std::wstring
-std::wstring StringToWString(const std::string& str);
+// Convierte wstring a string (UTF-8)
+string WStringToString(const wstring& wstr);
 
-// Normaliza ISBN: elimina caracteres no numéricos de un std::wstring
-std::string NormalizeISBN(const std::wstring& isbnW);
+// Convierte string (UTF-8) a wstring
+wstring StringToWString(const string& str);
 
-// Convierte std::string (UTF-8) a std::wstring, útil para mensajes de PostgreSQL
-std::wstring Utf8ToWstring(const std::string& utf8Str);
+// Normaliza ISBN: elimina caracteres no numéricos de un wstring
+string NormalizeISBN(const wstring& isbnW);
+
+// Convierte string (UTF-8) a wstring, útil para mensajes de PostgreSQL
+wstring Utf8ToWstring(const string& utf8Str);
 
 #endif // STRINGUTILS_H

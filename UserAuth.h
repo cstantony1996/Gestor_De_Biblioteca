@@ -1,9 +1,9 @@
 #ifndef USERAUTH_H
 #define USERAUTH_H
 
-#include <libpq-fe.h>
+#include "byte_fix.h" 
 #include <string>
-#include <ctime>
+#include <libpq-fe.h>
 
 using namespace std;
 
@@ -11,21 +11,20 @@ class UserAuth
 {
 private:
     PGconn *conn;
-
-    string hashPassword(const string &password);
-    bool usernameExists(const string &username);
-    bool emailExists(const string &email);
+    bool authenticated;
+    string currentUser;
 
 public:
     UserAuth(PGconn *connection);
+    bool loginByEmail(const string &email, const string &password);
+    bool loginByEmail(const wstring &email, const wstring &password); // Nueva sobrecarga
     bool registerUser(const string &username, const string &password, const string &email);
-    bool login(const string &username, const string &password);
-    void showAuthMenu();
     bool isAuthenticated() const;
+    string getCurrentUserEmail() const;
 
 private:
-    bool authenticated = false;
-    string currentUser;
+    string hashPassword(const string &password);
+    bool emailExists(const string &email);
 };
 
-#endif // USERAUTH_H
+#endif

@@ -1,5 +1,7 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
+
+#include "byte_fix.h" 
  
 #include <libpq-fe.h>
  

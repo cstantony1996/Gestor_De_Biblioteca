@@ -1,4 +1,4 @@
-#include <string>
+#include "byte_fix.h" 
 #include "MenuWindow.h"
 #include "LoginWindow.h"
 #include "AddBookWindow.h"
@@ -6,13 +6,17 @@
 #include "BuscarLibro.h"
 #include "ReturnBookWindow.h"
 #include "ListarLibrosWindow.h"
+#include "WindowUtils.h"
 #include "resources.h"
+#include <string>
+
+using namespace std;
 
 LRESULT CALLBACK MenuWndProc(HWND, UINT, WPARAM, LPARAM);
 HINSTANCE gInst;
-std::wstring gUsername;
+wstring gUsername;
 
-void ShowMenuWindow(HINSTANCE hInstance, const std::wstring& username)
+void ShowMenuWindow(HINSTANCE hInstance, const wstring &username)
 {
     gInst = hInstance;
     gUsername = username;
@@ -24,18 +28,14 @@ void ShowMenuWindow(HINSTANCE hInstance, const std::wstring& username)
     HICON hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_ICON1));
     RegisterClassW(&wc);
 
-    std::wstring windowTitle = L"Menú Principal - Usuario: " + username;
+    wstring windowTitle = L"Menú Principal - Usuario: " + username;
 
-    HWND hwnd = CreateWindowW(L"MenuWindow", windowTitle.c_str(), WS_OVERLAPPEDWINDOW,
-                              CW_USEDEFAULT, CW_USEDEFAULT, 400, 400, NULL, NULL, hInstance, NULL);
+    HWND hwnd = CreateWindowW(L"MenuWindow", windowTitle.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 400, 400, NULL, NULL, hInstance, NULL);
 
-    SendMessage(hwnd, WM_SETICON, ICON_BIG, 
-        (LPARAM)LoadIcon(gInst, MAKEINTRESOURCE(IDI_ICON1)));
-    SendMessage(hwnd, WM_SETICON, ICON_SMALL,
-        (LPARAM)LoadImage(gInst, MAKEINTRESOURCE(IDI_ICON1), 
-        IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR));
+    SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)LoadIcon(gInst, MAKEINTRESOURCE(IDI_ICON1)));
+    SendMessage(hwnd, WM_SETICON, ICON_SMALL,(LPARAM)LoadImage(gInst, MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR));
 
-
+    WindowUtils::CenterWindow(hwnd);
     ShowWindow(hwnd, SW_SHOW);
     UpdateWindow(hwnd);
 
@@ -47,7 +47,6 @@ void ShowMenuWindow(HINSTANCE hInstance, const std::wstring& username)
         DispatchMessage(&msg);
     }
 }
-
 
 LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -66,8 +65,8 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         switch (LOWORD(wParam))
         {
         case 1:
-        DestroyWindow(hwnd);
-        ShowAddBookWindow(gInst, gUsername);
+            DestroyWindow(hwnd);
+            ShowAddBookWindow(gInst, gUsername);
             break;
         case 2:
             DestroyWindow(hwnd);
@@ -78,22 +77,22 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             ShowListarLibrosWindow(gInst, gUsername);
             break;
         case 4:
-        ShowLoanBookWindow(gInst, gUsername, hwnd); // pasa hwnd como ventana padre
-    ShowWindow(hwnd, SW_HIDE);
+            ShowLoanBookWindow(gInst, gUsername, hwnd); // pasa hwnd como ventana padre
+            ShowWindow(hwnd, SW_HIDE);
             break;
         case 5:
-            DestroyWindow(hwnd);                          // Oculta el menú
-    ShowReturnBookWindow(gInst, gUsername, hwnd);
-    break;
-        case 6: // ✅ Cerrar Sesión
-            DestroyWindow(hwnd);       // Cierra la ventana de menú
-            ShowLoginWindow(gInst);    // Vuelve a mostrar el login
+            DestroyWindow(hwnd); // Oculta el menú
+            ShowReturnBookWindow(gInst, gUsername, hwnd);
+            break;
+        case 6:                     // ✅ Cerrar Sesión
+            DestroyWindow(hwnd);    // Cierra la ventana de menú
+            ShowLoginWindow(gInst); // Vuelve a mostrar el login
             return 0;
         }
         break;
 
-    case WM_DESTROY: 
-      //PostQuitMessage(0);
+    case WM_DESTROY:
+        // PostQuitMessage(0);
         break;
     }
 

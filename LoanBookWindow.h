@@ -1,5 +1,10 @@
 #pragma once
+
+#include "byte_fix.h" 
+
 #include <string>
 #include <Windows.h>
 
-void ShowLoanBookWindow(HINSTANCE hInstance, const std::wstring& username, HWND hWndMenu);
+using namespace std;
+
+void ShowLoanBookWindow(HINSTANCE hInstance, const wstring& username, HWND hWndMenu);

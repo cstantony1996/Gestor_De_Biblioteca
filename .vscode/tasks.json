@@ -17,6 +17,8 @@
                 "GlobalVars.cpp",
                 "StringUtils.cpp",
                 "BuscarLibro.cpp",
+                "ReturnBookWindow.cpp",
+                "ListarLibrosWindow.cpp",
                 "${file}",
                 "-o",
                 "${fileDirname}/Biblioteca.exe",

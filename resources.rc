@@ -1,3 +1,5 @@
 #include "resources.h"
 
 IDI_ICON1 ICON "icono_multi_res.ico"
+
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "app.manifest"
