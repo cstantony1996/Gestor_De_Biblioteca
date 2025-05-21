@@ -1,6 +1,7 @@
 #include "byte_fix.h" 
 #include "UserAuth.h"
 #include "StringUtils.h"
+#include "GlobalVars.h"
 #include <stdexcept>
 #include <functional>
 #include <locale>  // Para conversión de wstring a string
@@ -68,28 +69,22 @@ bool UserAuth::registerUser(const string &username, const string &password, cons
 bool UserAuth::loginByEmail(const string &email, const string &password)
 {
     if (email.empty() || password.empty())
-    {
         return false;
-    }
 
-    const char *query = "SELECT id, username, password FROM usuarios WHERE email = $1";
+    const char *query = "SELECT username, password, rol FROM usuarios WHERE email = $1";
     const char *paramValues[1] = {email.c_str()};
 
     PGresult *res = PQexecParams(conn, query, 1, NULL, paramValues, NULL, NULL, 0);
 
-    if (PQresultStatus(res) != PGRES_TUPLES_OK)
+    if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
     {
         PQclear(res);
         return false;
     }
 
-    if (PQntuples(res) == 0)
-    {
-        PQclear(res);
-        return false;
-    }
-
-    string storedHash = PQgetvalue(res, 0, 2);
+    string storedHash = PQgetvalue(res, 0, 1);
+    string role = PQgetvalue(res, 0, 2);
+    string username = PQgetvalue(res, 0, 0);
     PQclear(res);
 
     if (hashPassword(password) != storedHash)
@@ -98,8 +93,27 @@ bool UserAuth::loginByEmail(const string &email, const string &password)
     }
 
     authenticated = true;
+
+    // Actualizar usuario y rol en variables globales
     currentUser = email;
+    currentRole = wstring(role.begin(), role.end());
+
     return true;
+}
+
+
+wstring UserAuth::getUserRole(const wstring& email) {
+    string query = "SELECT rol FROM usuarios WHERE email = '" + string(email.begin(), email.end()) + "'";
+    PGresult* res = PQexec(conn, query.c_str());
+
+    if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0) {
+        PQclear(res);
+        return L"";
+    }
+
+    string role = PQgetvalue(res, 0, 0);
+    PQclear(res);
+    return wstring(role.begin(), role.end());
 }
 
 // Nueva versión para wstring (Windows)

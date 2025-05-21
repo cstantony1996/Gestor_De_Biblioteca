@@ -21,6 +21,7 @@ public:
     bool registerUser(const string &username, const string &password, const string &email);
     bool isAuthenticated() const;
     string getCurrentUserEmail() const;
+    wstring getUserRole(const wstring& email);
 
 private:
     string hashPassword(const string &password);

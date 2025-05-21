@@ -19,6 +19,7 @@
                 "BuscarLibro.cpp",
                 "ReturnBookWindow.cpp",
                 "ListarLibrosWindow.cpp",
+                "RegisterUserWindow.cpp",
                 "${file}",
                 "-o",
                 "${fileDirname}/Biblioteca.exe",

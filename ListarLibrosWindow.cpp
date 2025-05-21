@@ -4,6 +4,7 @@
 #include "StringUtils.h"
 #include "MenuWindow.h"
 #include "WindowUtils.h"
+#include "GlobalVars.h"
 #include <string>
 #include <libpq-fe.h>
 #include <commctrl.h>
@@ -180,7 +181,7 @@ LRESULT CALLBACK ListarLibrosWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
         case 2: // Regresar
             DestroyWindow(hwnd);
-            ShowMenuWindow(gListarInst, gListarUsername);
+            ShowMenuWindow(gListarInst, gListarUsername, currentRole);
             break;
 
         case 3: // Ordenar por título

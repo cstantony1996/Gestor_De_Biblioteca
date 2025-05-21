@@ -7,4 +7,4 @@
 
 using namespace std;
 
-void ShowBuscarLibroWindow(HINSTANCE hInstance, const wstring& username);
+void ShowBuscarLibroWindow(HINSTANCE hInstance, const wstring& username, const wstring& role);

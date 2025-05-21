@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void ShowMenuWindow(HINSTANCE hInstance, const wstring& username);
+void ShowMenuWindow(HINSTANCE hInstance, const wstring& username, const wstring& userRole);
 void ShowAddBookWindow(HINSTANCE hInstance, const wstring& username);
 
 #endif

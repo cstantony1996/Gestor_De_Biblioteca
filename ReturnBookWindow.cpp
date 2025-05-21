@@ -250,7 +250,7 @@ LRESULT CALLBACK ReturnBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
         else if (LOWORD(wParam) == 2)
         { // Botón "Regresar"
             DestroyWindow(hwnd);
-            ShowMenuWindow(GetModuleHandle(nullptr), currentUser);
+            ShowMenuWindow(GetModuleHandle(nullptr), currentUser, currentRole);
         }
         break;
 

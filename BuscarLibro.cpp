@@ -14,13 +14,15 @@ using namespace std;
 
 LRESULT CALLBACK BuscarLibroWndProc(HWND, UINT, WPARAM, LPARAM);
 HINSTANCE gBuscarInst;
+wstring gBuscarUserRole;
 wstring gBuscarUsername;
 
 // Ya NO defines Utf8ToWstring aquí, se usa la que está en StringUtils.cpp
 
-void ShowBuscarLibroWindow(HINSTANCE hInstance, const wstring &username)
+void ShowBuscarLibroWindow(HINSTANCE hInstance, const wstring &username, const wstring& role)
 {
     gBuscarInst = hInstance;
+    gBuscarUserRole = role;
     gBuscarUsername = username;
 
     INITCOMMONCONTROLSEX icex = {sizeof(INITCOMMONCONTROLSEX), ICC_LISTVIEW_CLASSES};
@@ -241,7 +243,7 @@ LRESULT CALLBACK BuscarLibroWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM l
 
         case 3:
             DestroyWindow(hwnd);
-            ShowMenuWindow(gBuscarInst, gBuscarUsername);
+            ShowMenuWindow(gBuscarInst, gBuscarUsername, gBuscarUserRole);
             break;
         }
         break;

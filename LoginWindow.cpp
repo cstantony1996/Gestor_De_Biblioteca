@@ -8,12 +8,6 @@
 
 using namespace std;
 
-// Variables globales
-HINSTANCE hInst;
-HWND hEmail, hPassword;
-UserAuth *auth;
-PGconn *conn;
-
 void ShowLoginWindow(HINSTANCE hInstance);
 
 void HandlePlaceholder(HWND hEdit, bool &hasPlaceholder, const wchar_t *placeholderText)
@@ -82,9 +76,10 @@ void Login(HWND hwnd)
 
     if (auth->loginByEmail(wemail, wpassword))
     {
+        wstring role = auth->getUserRole(wemail);
         MessageBoxW(hwnd, L"¡Inicio exitoso!", L"Éxito", MB_OK);
         DestroyWindow(hwnd);
-        ShowMenuWindow(hInst, wemail);
+        ShowMenuWindow(hInst, wemail, role);
     }
     else
     {

@@ -6,8 +6,10 @@
 #include "BuscarLibro.h"
 #include "ReturnBookWindow.h"
 #include "ListarLibrosWindow.h"
+#include "RegisterUserWindow.h"
 #include "WindowUtils.h"
 #include "resources.h"
+#include "GlobalVars.h"
 #include <string>
 
 using namespace std;
@@ -16,7 +18,8 @@ LRESULT CALLBACK MenuWndProc(HWND, UINT, WPARAM, LPARAM);
 HINSTANCE gInst;
 wstring gUsername;
 
-void ShowMenuWindow(HINSTANCE hInstance, const wstring &username)
+
+void ShowMenuWindow(HINSTANCE hInstance, const wstring &username, const wstring &userRole)
 {
     gInst = hInstance;
     gUsername = username;
@@ -59,6 +62,11 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         CreateWindowW(L"BUTTON", L"Prestar Libros", WS_VISIBLE | WS_CHILD, 100, 180, 200, 40, hwnd, (HMENU)4, gInst, NULL);
         CreateWindowW(L"BUTTON", L"Devolver Libros", WS_VISIBLE | WS_CHILD, 100, 230, 200, 40, hwnd, (HMENU)5, gInst, NULL);
         CreateWindowW(L"BUTTON", L"Cerrar Sesión", WS_VISIBLE | WS_CHILD, 100, 300, 180, 20, hwnd, (HMENU)6, NULL, NULL);
+        
+        if (currentRole == L"Admin") {
+            CreateWindowW(L"BUTTON", L"Registrar", WS_VISIBLE | WS_CHILD, 150, 300, 150, 30, hwnd, (HMENU)7, NULL, NULL);
+        }
+        
         break;
 
     case WM_COMMAND:
@@ -70,7 +78,7 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             break;
         case 2:
             DestroyWindow(hwnd);
-            ShowBuscarLibroWindow(gInst, gUsername);
+            ShowBuscarLibroWindow(gInst, gUsername, currentRole);
             break;
         case 3:
             DestroyWindow(hwnd);
@@ -88,6 +96,9 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             DestroyWindow(hwnd);    // Cierra la ventana de menú
             ShowLoginWindow(gInst); // Vuelve a mostrar el login
             return 0;
+        case 7:
+            ShowRegisterWindow(GetModuleHandle(NULL));
+            break;
         }
         break;
 

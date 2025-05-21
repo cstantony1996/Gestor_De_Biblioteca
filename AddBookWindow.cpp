@@ -152,7 +152,7 @@ LRESULT CALLBACK AddBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
         else if (LOWORD(wParam) == 2)
         {                                                          // Botón Regresar
             DestroyWindow(hwnd);                                   // Cierra esta ventana
-            ShowMenuWindow(GetModuleHandle(nullptr), currentUser); // Vuelve al menú
+            ShowMenuWindow(GetModuleHandle(nullptr), currentUser, currentRole); // Vuelve al menú
         }
         break;
 

@@ -8,15 +8,18 @@
 
 using namespace std;
 
-extern wstring currentUser; // Declaración
-
-#pragma once
-
 extern HINSTANCE hInst;
 extern HWND hEmail;
 extern HWND hPassword;
-extern UserAuth *auth;
-extern PGconn *conn;
+extern HWND hUsername;
+extern HWND hRoleCombo;
 
 extern bool emailHasPlaceholder;
 extern bool passwordHasPlaceholder;
+
+extern UserAuth* auth;
+extern PGconn* conn;
+
+extern wstring currentUser;
+extern wstring gUserRole;
+extern wstring currentRole;
