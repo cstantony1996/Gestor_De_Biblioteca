@@ -157,7 +157,7 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
             string bibliotecarioUsername = WStringToString(currentUser);
             const char *biblioParams[1] = {bibliotecarioUsername.c_str()};
 
-            PGresult *res = PQexecParams(conn, "SELECT id FROM usuarios WHERE username = $1 AND rol = 'bibliotecario'", 1, nullptr, biblioParams, nullptr, nullptr, 0);
+            PGresult *res = PQexecParams(conn, "SELECT id FROM usuarios WHERE email = $1 AND (rol = 'bibliotecario' OR rol = 'Admin')", 1, nullptr, biblioParams, nullptr, nullptr, 0);
 
             if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
             {
