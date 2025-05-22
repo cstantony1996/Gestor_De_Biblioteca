@@ -12,9 +12,9 @@ using namespace std;
 
 void ShowLoginWindow(HINSTANCE hInstance);
 
-void CreateConsole()
+/*void CreateConsole()
 {
-    AllocConsole();
+   AllocConsole();
     FILE* fp;
     freopen_s(&fp, "CONOUT$", "w", stdout);  // Redirige stdout a consola
     freopen_s(&fp, "CONOUT$", "w", stderr);  // Redirige stderr a consola
@@ -23,7 +23,7 @@ void CreateConsole()
     // Opcional: establece título para la consola
     SetConsoleTitleW(L"Consola de Debug - Biblioteca");
 }
-
+*/
 
 void HandlePlaceholder(HWND hEdit, bool &hasPlaceholder, const wchar_t *placeholderText)
 {
@@ -225,8 +225,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int)
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
-    CreateConsole();  
-    
+    //CreateConsole();  
+
     if (!Credenciales::cargarDesdeArchivo("C:/Users/casta/OneDrive/Escritorio/Gestor_De_Biblioteca/gmail_credentials.txt")) {
         MessageBoxA(nullptr, "No se pudieron cargar las credenciales de Gmail.", "Error", MB_ICONERROR | MB_OK);
         return 1;
