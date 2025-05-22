@@ -1,4 +1,4 @@
 #pragma once
 #include <windows.h>
 
-void ShowRegisterWindow(HINSTANCE hInstance);
+void ShowRegisterWindow(HINSTANCE hInstance, HWND menuWindow);

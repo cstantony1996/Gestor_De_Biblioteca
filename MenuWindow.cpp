@@ -33,7 +33,7 @@ void ShowMenuWindow(HINSTANCE hInstance, const wstring &username, const wstring 
 
     wstring windowTitle = L"Menú Principal - Usuario: " + username;
 
-    HWND hwnd = CreateWindowW(L"MenuWindow", windowTitle.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 400, 400, NULL, NULL, hInstance, NULL);
+    HWND hwnd = CreateWindowW(L"MenuWindow", windowTitle.c_str(), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 430, 450, NULL, NULL, hInstance, NULL);
 
     SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)LoadIcon(gInst, MAKEINTRESOURCE(IDI_ICON1)));
     SendMessage(hwnd, WM_SETICON, ICON_SMALL,(LPARAM)LoadImage(gInst, MAKEINTRESOURCE(IDI_ICON1), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR));
@@ -56,15 +56,15 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch (msg)
     {
     case WM_CREATE:
-        CreateWindowW(L"BUTTON", L"Agregar Libro", WS_VISIBLE | WS_CHILD, 100, 30, 200, 40, hwnd, (HMENU)1, gInst, NULL);
-        CreateWindowW(L"BUTTON", L"Buscar Libro", WS_VISIBLE | WS_CHILD, 100, 80, 200, 40, hwnd, (HMENU)2, gInst, NULL);
-        CreateWindowW(L"BUTTON", L"Listar Libros", WS_VISIBLE | WS_CHILD, 100, 130, 200, 40, hwnd, (HMENU)3, gInst, NULL);
-        CreateWindowW(L"BUTTON", L"Prestar Libros", WS_VISIBLE | WS_CHILD, 100, 180, 200, 40, hwnd, (HMENU)4, gInst, NULL);
-        CreateWindowW(L"BUTTON", L"Devolver Libros", WS_VISIBLE | WS_CHILD, 100, 230, 200, 40, hwnd, (HMENU)5, gInst, NULL);
-        CreateWindowW(L"BUTTON", L"Cerrar Sesión", WS_VISIBLE | WS_CHILD, 100, 300, 180, 20, hwnd, (HMENU)6, NULL, NULL);
+        CreateWindowW(L"BUTTON", L"Agregar Libro", WS_VISIBLE | WS_CHILD, 115, 50, 200, 40, hwnd, (HMENU)1, gInst, NULL);
+        CreateWindowW(L"BUTTON", L"Buscar Libro", WS_VISIBLE | WS_CHILD, 115, 100, 200, 40, hwnd, (HMENU)2, gInst, NULL);
+        CreateWindowW(L"BUTTON", L"Listar Libros", WS_VISIBLE | WS_CHILD, 115, 150, 200, 40, hwnd, (HMENU)3, gInst, NULL);
+        CreateWindowW(L"BUTTON", L"Prestar Libros", WS_VISIBLE | WS_CHILD, 115, 200, 200, 40, hwnd, (HMENU)4, gInst, NULL);
+        CreateWindowW(L"BUTTON", L"Devolver Libros", WS_VISIBLE | WS_CHILD, 115, 250, 200, 40, hwnd, (HMENU)5, gInst, NULL);
+        CreateWindowW(L"BUTTON", L"Cerrar Sesión", WS_VISIBLE | WS_CHILD, 125, 320, 180, 20, hwnd, (HMENU)6, NULL, NULL);
         
         if (currentRole == L"Admin") {
-            CreateWindowW(L"BUTTON", L"Registrar", WS_VISIBLE | WS_CHILD, 150, 300, 150, 30, hwnd, (HMENU)7, NULL, NULL);
+            CreateWindowW(L"BUTTON", L"Registrar", WS_VISIBLE | WS_CHILD, 315, 10, 90, 30, hwnd, (HMENU)7, NULL, NULL);
         }
         
         break;
@@ -97,7 +97,8 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             ShowLoginWindow(gInst); // Vuelve a mostrar el login
             return 0;
         case 7:
-            ShowRegisterWindow(GetModuleHandle(NULL));
+            ShowRegisterWindow(hInst, hwnd); // <-- PASA hwnd como segundo parámetro
+            ShowWindow(hwnd, SW_HIDE);
             break;
         }
         break;
