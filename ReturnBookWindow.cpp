@@ -67,10 +67,10 @@ void LlenarListaPrestamos(HWND hwnd, const wstring &username)
             throw runtime_error("No se pudo conectar a la base de datos");
         }
 
-        string userStr = WStringToString(username);
+        string emailStr = WStringToString(username);
         PGresult *userRes = PQexecParams(conn,
-                                         "SELECT id FROM usuarios WHERE username = $1",
-                                         1, nullptr, (const char *[]){userStr.c_str()}, nullptr, nullptr, 0);
+                                         "SELECT id FROM usuarios WHERE email = $1",
+                                         1, nullptr, (const char *[]){emailStr.c_str()}, nullptr, nullptr, 0);
 
         if (PQresultStatus(userRes) != PGRES_TUPLES_OK || PQntuples(userRes) == 0)
         {
