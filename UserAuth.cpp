@@ -1,4 +1,4 @@
-#include "byte_fix.h" 
+#include "byte_fix.h"
 #include "UserAuth.h"
 #include "StringUtils.h"
 #include "GlobalVars.h"
@@ -11,22 +11,24 @@ using namespace std;
 
 UserAuth::UserAuth(PGconn *connection) : conn(connection), authenticated(false) {}
 
-std::string UserAuth::getEmailByUsername(const std::string& username) {
-    std::string email = "";
+string UserAuth::getEmailByUsername(const string &username)
+{
+    string email = "";
 
-    std::string query = "SELECT email FROM usuarios WHERE username = '" + username + "'";
+    string query = "SELECT email FROM usuarios WHERE username = '" + username + "'";
 
-    PGresult* res = PQexec(conn, query.c_str());
+    PGresult *res = PQexec(conn, query.c_str());
 
-    if (PQresultStatus(res) == PGRES_TUPLES_OK) {
-        if (PQntuples(res) > 0) {
+    if (PQresultStatus(res) == PGRES_TUPLES_OK)
+    {
+        if (PQntuples(res) > 0)
+        {
             email = PQgetvalue(res, 0, 0);
         }
     }
     PQclear(res);
     return email;
 }
-
 
 string UserAuth::hashPassword(const string &password)
 {
@@ -118,12 +120,13 @@ bool UserAuth::loginByEmail(const string &email, const string &password)
     return true;
 }
 
-
-wstring UserAuth::getUserRole(const wstring& email) {
+wstring UserAuth::getUserRole(const wstring &email)
+{
     string query = "SELECT rol FROM usuarios WHERE email = '" + string(email.begin(), email.end()) + "'";
-    PGresult* res = PQexec(conn, query.c_str());
+    PGresult *res = PQexec(conn, query.c_str());
 
-    if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0) {
+    if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
+    {
         PQclear(res);
         return L"";
     }

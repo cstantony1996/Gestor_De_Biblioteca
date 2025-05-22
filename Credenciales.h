@@ -3,14 +3,18 @@
 
 #include <string>
 
-class Credenciales {
+using namespace std;
+
+class Credenciales
+{
 public:
-    static bool cargarDesdeArchivo(const std::string& rutaArchivo);
-    static std::string getEmail();
-    static std::string getAppPassword();
+    static bool cargarDesdeArchivo(const string &rutaArchivo);
+    static string getEmail();
+    static string getAppPassword();
+
 private:
-    static std::string email;
-    static std::string appPassword;
+    static string email;
+    static string appPassword;
 };
 
 #endif

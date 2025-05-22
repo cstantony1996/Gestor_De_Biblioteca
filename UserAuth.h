@@ -22,7 +22,7 @@ public:
     bool isAuthenticated() const;
     string getCurrentUserEmail() const;
     wstring getUserRole(const wstring& email);
-    string getEmailByUsername(const std::string& username);
+    string getEmailByUsername(const string& username);
 
 private:
     string hashPassword(const string &password);

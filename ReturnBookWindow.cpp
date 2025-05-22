@@ -1,4 +1,4 @@
-#include "byte_fix.h" 
+#include "byte_fix.h"
 #include "ReturnBookWindow.h"
 #include "Connection.h"
 #include "StringUtils.h"
@@ -39,20 +39,19 @@ void LlenarListaPrestamos(HWND hwnd, const wstring &username)
 
         // Evita agregar columnas más de una vez
         LVCOLUMNW col = {};
-col.mask = LVCF_TEXT | LVCF_WIDTH;
+        col.mask = LVCF_TEXT | LVCF_WIDTH;
 
-col.cx = 200;
-col.pszText = L"Título";
-ListView_InsertColumn(hListView, 0, &col);
+        col.cx = 200;
+        col.pszText = L"Título";
+        ListView_InsertColumn(hListView, 0, &col);
 
-col.cx = 150;
-col.pszText = L"ISBN";
-ListView_InsertColumn(hListView, 1, &col);
+        col.cx = 150;
+        col.pszText = L"ISBN";
+        ListView_InsertColumn(hListView, 1, &col);
 
-col.cx = 130;
-col.pszText = L"Fecha Devolución";
-ListView_InsertColumn(hListView, 2, &col);
-
+        col.cx = 130;
+        col.pszText = L"Fecha Devolución";
+        ListView_InsertColumn(hListView, 2, &col);
 
         PGconn *conn = conectarDB();
         if (!conn || PQstatus(conn) != CONNECTION_OK)
@@ -276,12 +275,12 @@ void ShowReturnBookWindow(HINSTANCE hInstance, const wstring &username, HWND hWn
 
     wstring titulo = L"Devolver Libro - Usuario: " + username;
 
-HWND hwnd = CreateWindowW(
-    wc.lpszClassName,
-    titulo.c_str(),
-    WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-    CW_USEDEFAULT, CW_USEDEFAULT, 520, 310,
-    nullptr, nullptr, hInstance, nullptr);
+    HWND hwnd = CreateWindowW(
+        wc.lpszClassName,
+        titulo.c_str(),
+        WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+        CW_USEDEFAULT, CW_USEDEFAULT, 520, 310,
+        nullptr, nullptr, hInstance, nullptr);
 
     WindowUtils::CenterWindow(hwnd);
     ShowWindow(hwnd, SW_SHOW);

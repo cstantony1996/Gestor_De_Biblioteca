@@ -1,46 +1,59 @@
+#include "byte_fix.h"
 #include "Credenciales.h"
 #include <fstream>
 #include <iostream>
 
-std::string Credenciales::email = "";
-std::string Credenciales::appPassword = "";
+using namespace std;
 
-bool Credenciales::cargarDesdeArchivo(const std::string& rutaArchivo) {
-    std::ifstream file(rutaArchivo);
-    if (!file.is_open()) {
-        std::cerr << "Error: no se pudo abrir archivo " << rutaArchivo << std::endl;
+string Credenciales::email = "";
+string Credenciales::appPassword = "";
+
+bool Credenciales::cargarDesdeArchivo(const string &rutaArchivo)
+{
+    ifstream file(rutaArchivo);
+    if (!file.is_open())
+    {
+        cerr << "Error: no se pudo abrir archivo " << rutaArchivo << endl;
         return false;
     }
 
-    std::string linea;
-    while (std::getline(file, linea)) {
+    string linea;
+    while (getline(file, linea))
+    {
         size_t pos = linea.find('=');
-        if (pos == std::string::npos) continue;
+        if (pos == string::npos)
+            continue;
 
-        std::string key = linea.substr(0, pos);
-        std::string value = linea.substr(pos + 1);
+        string key = linea.substr(0, pos);
+        string value = linea.substr(pos + 1);
 
-        if (key == "usuario") {
+        if (key == "usuario")
+        {
             email = value;
-        } else if (key == "clave") {
+        }
+        else if (key == "clave")
+        {
             appPassword = value;
         }
     }
 
     file.close();
 
-    if (email.empty() || appPassword.empty()) {
-        std::cerr << "Error: usuario o clave vacíos en archivo" << std::endl;
+    if (email.empty() || appPassword.empty())
+    {
+        cerr << "Error: usuario o clave vacíos en archivo" << endl;
         return false;
     }
 
     return true;
 }
 
-std::string Credenciales::getEmail() {
+string Credenciales::getEmail()
+{
     return email;
 }
 
-std::string Credenciales::getAppPassword() {
+string Credenciales::getAppPassword()
+{
     return appPassword;
 }
