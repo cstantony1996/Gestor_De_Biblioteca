@@ -38,26 +38,21 @@ void LlenarListaPrestamos(HWND hwnd, const wstring &username)
         prestamosUsuario.clear();
 
         // Evita agregar columnas más de una vez
-        static bool columnasConfiguradas = false;
-        if (!columnasConfiguradas)
-        {
-            LVCOLUMNW col = {};
-            col.mask = LVCF_TEXT | LVCF_WIDTH;
+        LVCOLUMNW col = {};
+col.mask = LVCF_TEXT | LVCF_WIDTH;
 
-            col.cx = 200;
-            col.pszText = L"Título";
-            ListView_InsertColumn(hListView, 0, &col);
+col.cx = 200;
+col.pszText = L"Título";
+ListView_InsertColumn(hListView, 0, &col);
 
-            col.cx = 150;
-            col.pszText = L"ISBN";
-            ListView_InsertColumn(hListView, 1, &col);
+col.cx = 150;
+col.pszText = L"ISBN";
+ListView_InsertColumn(hListView, 1, &col);
 
-            col.cx = 130;
-            col.pszText = L"Fecha Devolución";
-            ListView_InsertColumn(hListView, 2, &col);
+col.cx = 130;
+col.pszText = L"Fecha Devolución";
+ListView_InsertColumn(hListView, 2, &col);
 
-            columnasConfiguradas = true;
-        }
 
         PGconn *conn = conectarDB();
         if (!conn || PQstatus(conn) != CONNECTION_OK)
@@ -184,7 +179,7 @@ LRESULT CALLBACK ReturnBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
             // Obtener ID del usuario
             string userStr = WStringToString(currentUser);
             PGresult *userRes = PQexecParams(conn,
-                                             "SELECT id FROM usuarios WHERE username = $1",
+                                             "SELECT id FROM usuarios WHERE email = $1",
                                              1, nullptr, (const char *[]){userStr.c_str()}, nullptr, nullptr, 0);
 
             if (PQresultStatus(userRes) != PGRES_TUPLES_OK || PQntuples(userRes) == 0)
@@ -281,7 +276,12 @@ void ShowReturnBookWindow(HINSTANCE hInstance, const wstring &username, HWND hWn
 
     wstring titulo = L"Devolver Libro - Usuario: " + username;
 
-    HWND hwnd = CreateWindowW(wc.lpszClassName, titulo.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME, CW_USEDEFAULT, CW_USEDEFAULT, 520, 310, nullptr, nullptr, hInstance, nullptr);
+HWND hwnd = CreateWindowW(
+    wc.lpszClassName,
+    titulo.c_str(),
+    WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+    CW_USEDEFAULT, CW_USEDEFAULT, 520, 310,
+    nullptr, nullptr, hInstance, nullptr);
 
     WindowUtils::CenterWindow(hwnd);
     ShowWindow(hwnd, SW_SHOW);

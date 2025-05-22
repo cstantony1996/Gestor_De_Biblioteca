@@ -5,10 +5,25 @@
 #include "GlobalVars.h"
 #include "WindowUtils.h"
 #include "resources.h"
+#include "Credenciales.h"
+#include <curl/curl.h>
 
 using namespace std;
 
 void ShowLoginWindow(HINSTANCE hInstance);
+
+void CreateConsole()
+{
+    AllocConsole();
+    FILE* fp;
+    freopen_s(&fp, "CONOUT$", "w", stdout);  // Redirige stdout a consola
+    freopen_s(&fp, "CONOUT$", "w", stderr);  // Redirige stderr a consola
+    freopen_s(&fp, "CONIN$", "r", stdin);    // Redirige stdin a consola
+
+    // Opcional: establece título para la consola
+    SetConsoleTitleW(L"Consola de Debug - Biblioteca");
+}
+
 
 void HandlePlaceholder(HWND hEdit, bool &hasPlaceholder, const wchar_t *placeholderText)
 {
@@ -207,6 +222,16 @@ void ShowLoginWindow(HINSTANCE hInstance)
 // Punto de entrada de la aplicación
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int)
 {
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+
+    CreateConsole();  
+    
+    if (!Credenciales::cargarDesdeArchivo("C:/Users/casta/OneDrive/Escritorio/Gestor_De_Biblioteca/gmail_credentials.txt")) {
+        MessageBoxA(nullptr, "No se pudieron cargar las credenciales de Gmail.", "Error", MB_ICONERROR | MB_OK);
+        return 1;
+    }
+
     hInst = hInstance;
     conn = conectarDB();
     if (!conn)
@@ -224,5 +249,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int)
 
     PQfinish(conn);
     delete auth;
+
+    curl_global_cleanup();
+
     return 0;
 }

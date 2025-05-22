@@ -6,9 +6,11 @@
 #include "GlobalVars.h"
 #include "resources.h"
 #include "WindowUtils.h"
+#include "EmailSender.h"
 #include <commctrl.h>
 #include <string>
 #include <libpq-fe.h>
+#include "iostream"
 #include <ctime>
 #include <sstream>
 
@@ -172,7 +174,7 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
             const char *lectorParams[1] = {lectorUsername.c_str()};
 
-            res = PQexecParams(conn, "SELECT id FROM usuarios WHERE username = $1 AND rol = 'lector'", 1, nullptr, lectorParams, nullptr, nullptr, 0);
+            res = PQexecParams(conn, "SELECT id FROM usuarios WHERE username = $1 AND rol = 'Lector'", 1, nullptr, lectorParams, nullptr, nullptr, 0);
 
             if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
             {
@@ -240,15 +242,33 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
             }
 
             PQclear(updateRes);
-            PQfinish(conn);
+PQfinish(conn);
 
-            wstring mensaje = L"Préstamo registrado exitosamente\n";
-            mensaje += L"Libro: " + StringToWString(titulo) + L"\n";
-            mensaje += L"Fecha devolución: " + StringToWString(fechaDevolucion);
-            MessageBoxW(hwnd, mensaje.c_str(), L"Éxito", MB_OK);
-            SetWindowTextW(hIsbnField, L"978-");
-            SetWindowTextW(hFechaDevolucionField, L"");
-            SetWindowTextW(hUsernameLectorField, L"");
+wstring mensaje = L"Préstamo registrado exitosamente\n";
+mensaje += L"Libro: " + StringToWString(titulo) + L"\n";
+mensaje += L"Fecha devolución: " + StringToWString(fechaDevolucion);
+MessageBoxW(hwnd, mensaje.c_str(), L"Éxito", MB_OK);
+SetWindowTextW(hIsbnField, L"978-");
+SetWindowTextW(hFechaDevolucionField, L"");
+SetWindowTextW(hUsernameLectorField, L"");
+
+try {
+    PGconn* connCorreo = conectarDB();
+    UserAuth userAuth(connCorreo);
+    std::string receptor = userAuth.getEmailByUsername(lectorUsername);
+    PQfinish(connCorreo);
+
+    if (!receptor.empty()) {
+        std::cout << "[DEBUG] Enviando correo a: " << receptor << std::endl;
+        EmailSender::sendLoanNotification(receptor, titulo, fechaDevolucion);
+    } else {
+        std::cout << "[DEBUG] No se encontró email para el usuario: " << lectorUsername << std::endl;
+    }
+} catch (const std::exception& e) {
+    wstring errorMsg = L"No se pudo enviar el correo de notificación:\n" + StringToWString(e.what());
+    MessageBoxW(hwnd, errorMsg.c_str(), L"Advertencia", MB_ICONWARNING);
+}
+
         }
         else if (LOWORD(wParam) == 2)
         {

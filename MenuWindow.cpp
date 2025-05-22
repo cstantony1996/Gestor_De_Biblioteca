@@ -10,6 +10,7 @@
 #include "WindowUtils.h"
 #include "resources.h"
 #include "GlobalVars.h"
+#include "EmailReminder.h"
 #include <string>
 
 using namespace std;
@@ -56,6 +57,10 @@ LRESULT CALLBACK MenuWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     switch (msg)
     {
     case WM_CREATE:
+
+    RevisarYEnviarRecordatorios();
+
+
         CreateWindowW(L"BUTTON", L"Agregar Libro", WS_VISIBLE | WS_CHILD, 115, 50, 200, 40, hwnd, (HMENU)1, gInst, NULL);
         CreateWindowW(L"BUTTON", L"Buscar Libro", WS_VISIBLE | WS_CHILD, 115, 100, 200, 40, hwnd, (HMENU)2, gInst, NULL);
         CreateWindowW(L"BUTTON", L"Listar Libros", WS_VISIBLE | WS_CHILD, 115, 150, 200, 40, hwnd, (HMENU)3, gInst, NULL);
