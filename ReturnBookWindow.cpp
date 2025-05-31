@@ -8,7 +8,6 @@
 #include "WindowUtils.h"
 #include <commctrl.h>
 #include <libpq-fe.h>
-#include <vector>
 #include <string>
 #include <stdexcept>
 
@@ -17,109 +16,8 @@ using namespace std;
 #pragma comment(lib, "comctl32.lib")
 #pragma comment(lib, "libpq.lib")
 
-static HWND hIsbnField, hListView;
+static HWND hIsbnField;
 static HWND hMenuWindow = nullptr;
-
-struct Prestamo
-{
-    int id;
-    wstring titulo;
-    wstring isbn;
-    wstring fechaDevolucion;
-};
-
-vector<Prestamo> prestamosUsuario;
-
-void LlenarListaPrestamos(HWND hwnd, const wstring &username)
-{
-    try
-    {
-        ListView_DeleteAllItems(hListView);
-        prestamosUsuario.clear();
-
-        // Evita agregar columnas más de una vez
-        LVCOLUMNW col = {};
-        col.mask = LVCF_TEXT | LVCF_WIDTH;
-
-        col.cx = 200;
-        col.pszText = L"Título";
-        ListView_InsertColumn(hListView, 0, &col);
-
-        col.cx = 150;
-        col.pszText = L"ISBN";
-        ListView_InsertColumn(hListView, 1, &col);
-
-        col.cx = 130;
-        col.pszText = L"Fecha Devolución";
-        ListView_InsertColumn(hListView, 2, &col);
-
-        PGconn *conn = conectarDB();
-        if (!conn || PQstatus(conn) != CONNECTION_OK)
-        {
-            if (conn)
-                PQfinish(conn);
-            throw runtime_error("No se pudo conectar a la base de datos");
-        }
-
-        string emailStr = WStringToString(username);
-        PGresult *userRes = PQexecParams(conn,
-                                         "SELECT id FROM usuarios WHERE email = $1",
-                                         1, nullptr, (const char *[]){emailStr.c_str()}, nullptr, nullptr, 0);
-
-        if (PQresultStatus(userRes) != PGRES_TUPLES_OK || PQntuples(userRes) == 0)
-        {
-            PQclear(userRes);
-            PQfinish(conn);
-            throw runtime_error("Usuario no encontrado");
-        }
-
-        int userId = atoi(PQgetvalue(userRes, 0, 0));
-        PQclear(userRes);
-
-        PGresult *res = PQexecParams(conn,
-                                     "SELECT l.titulo, l.isbn, to_char(p.fecha_devolucion, 'DD-MM-YYYY'), l.id "
-                                     "FROM prestamos p JOIN libros l ON p.libro_id = l.id "
-                                     "WHERE p.usuario_id = $1",
-                                     1, nullptr, (const char *[]){to_string(userId).c_str()}, nullptr, nullptr, 0);
-        ;
-
-        if (PQresultStatus(res) != PGRES_TUPLES_OK)
-        {
-            PQclear(res);
-            PQfinish(conn);
-            throw runtime_error("Error al obtener préstamos");
-        }
-
-        for (int i = 0; i < PQntuples(res); ++i)
-        {
-            Prestamo p;
-            p.titulo = StringToWString(PQgetvalue(res, i, 0));          // columna 0: titulo
-            p.isbn = StringToWString(PQgetvalue(res, i, 1));            // columna 1: isbn (con guiones)
-            p.fechaDevolucion = StringToWString(PQgetvalue(res, i, 2)); // columna 2: fecha devolución
-            p.id = atoi(PQgetvalue(res, i, 3));                         // columna 3: id libro (no se muestra, pero útil internamente)
-
-            prestamosUsuario.push_back(p);
-
-            LVITEMW item = {0};
-            item.mask = LVIF_TEXT;
-            item.iItem = i;
-            item.pszText = const_cast<LPWSTR>(p.titulo.c_str());
-            ListView_InsertItem(hListView, &item);
-
-            ListView_SetItemText(hListView, i, 1, const_cast<LPWSTR>(p.isbn.c_str()));
-            ListView_SetItemText(hListView, i, 2, const_cast<LPWSTR>(p.fechaDevolucion.c_str()));
-        }
-
-        PQclear(res);
-        PQfinish(conn);
-    }
-    catch (const exception &e)
-    {
-        wstring mensaje = L"Error: ";
-        mensaje += StringToWString(e.what());
-        MessageBoxW(hwnd, mensaje.c_str(), L"Excepción", MB_ICONERROR);
-    }
-}
 
 LRESULT CALLBACK ReturnBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -134,20 +32,12 @@ LRESULT CALLBACK ReturnBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
                                    WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL,
                                    280, 20, 200, 20, hwnd, nullptr, nullptr, nullptr);
 
-        hListView = CreateWindowW(WC_LISTVIEW, L"",
-                                  WS_VISIBLE | WS_CHILD | LVS_REPORT | LVS_SINGLESEL | WS_BORDER,
-                                  20, 60, 460, 150, hwnd, nullptr, nullptr, nullptr);
-
-        LVCOLUMNW col = {0};
-        col.mask = LVCF_TEXT | LVCF_WIDTH;
-
         CreateWindowW(L"BUTTON", L"Devolver Libro", WS_VISIBLE | WS_CHILD,
-                      120, 220, 150, 30, hwnd, (HMENU)1, nullptr, nullptr);
+                      120, 60, 150, 30, hwnd, (HMENU)1, nullptr, nullptr);
 
         CreateWindowW(L"BUTTON", L"Regresar", WS_VISIBLE | WS_CHILD,
-                      280, 220, 150, 30, hwnd, (HMENU)2, nullptr, nullptr);
+                      280, 60, 150, 30, hwnd, (HMENU)2, nullptr, nullptr);
 
-        LlenarListaPrestamos(hwnd, currentUser);
         break;
     }
 
@@ -239,7 +129,6 @@ LRESULT CALLBACK ReturnBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
             PQfinish(conn);
 
             MessageBoxW(hwnd, L"El libro ha sido devuelto con éxito", L"Éxito", MB_OK);
-            LlenarListaPrestamos(hwnd, currentUser);
         }
         else if (LOWORD(wParam) == 2)
         { // Botón "Regresar"
@@ -279,7 +168,7 @@ void ShowReturnBookWindow(HINSTANCE hInstance, const wstring &username, HWND hWn
         wc.lpszClassName,
         titulo.c_str(),
         WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
-        CW_USEDEFAULT, CW_USEDEFAULT, 520, 310,
+        CW_USEDEFAULT, CW_USEDEFAULT, 520, 150,
         nullptr, nullptr, hInstance, nullptr);
 
     WindowUtils::CenterWindow(hwnd);

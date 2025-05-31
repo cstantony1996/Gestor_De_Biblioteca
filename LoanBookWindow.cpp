@@ -10,9 +10,10 @@
 #include <commctrl.h>
 #include <string>
 #include <libpq-fe.h>
-#include "iostream"
+#include <iostream>
 #include <ctime>
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -23,6 +24,9 @@ static HWND hMenuWindow = nullptr;
 static HWND hIsbnField;
 static HWND hFechaDevolucionField;
 static HWND hUsernameLectorField;
+static HWND hTituloField;
+static HWND hBuscarButton;
+static HWND hResultadoListView;
 
 string ConvertirFechaFormatoPostgres(const string &fechaStr)
 {
@@ -89,26 +93,48 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
     {
     case WM_CREATE:
     {
-        CreateWindowW(L"STATIC", L"Ingrese el ISBN del libro a prestar:", WS_VISIBLE | WS_CHILD, 20, 20, 280, 20, hwnd, nullptr, nullptr, nullptr);
+        InitCommonControls();
 
+        CreateWindowW(L"STATIC", L"Ingrese el ISBN del libro a prestar:", WS_VISIBLE | WS_CHILD, 20, 20, 280, 20, hwnd, nullptr, nullptr, nullptr);
         hIsbnField = CreateWindowW(L"EDIT", L"978-", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 300, 20, 200, 20, hwnd, nullptr, nullptr, nullptr);
 
         CreateWindowW(L"STATIC", L"Fecha de devolución (DD-MM-YYYY):", WS_VISIBLE | WS_CHILD, 20, 50, 280, 20, hwnd, nullptr, nullptr, nullptr);
-
         hFechaDevolucionField = CreateWindowW(L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER, 300, 50, 200, 20, hwnd, nullptr, nullptr, nullptr);
 
         CreateWindowW(L"STATIC", L"Username del lector:", WS_VISIBLE | WS_CHILD, 20, 80, 280, 20, hwnd, nullptr, nullptr, nullptr);
-
         hUsernameLectorField = CreateWindowW(L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER, 300, 80, 200, 20, hwnd, nullptr, nullptr, nullptr);
+
+        // Nuevos controles para búsqueda
+        CreateWindowW(L"STATIC", L"Título del libro:", WS_VISIBLE | WS_CHILD, 20, 110, 120, 20, hwnd, nullptr, nullptr, nullptr);
+        hTituloField = CreateWindowW(L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_AUTOHSCROLL, 150, 110, 200, 20, hwnd, nullptr, nullptr, nullptr);
+        hBuscarButton = CreateWindowW(L"BUTTON", L"Buscar", WS_VISIBLE | WS_CHILD, 370, 110, 80, 24, hwnd, (HMENU)3, nullptr, nullptr);
+
+        // ListView para resultados de búsqueda
+        hResultadoListView = CreateWindowW(WC_LISTVIEWW, L"", WS_VISIBLE | WS_CHILD | LVS_REPORT | LVS_SINGLESEL | WS_BORDER, 20, 140, 540, 150, hwnd, nullptr, nullptr, nullptr);
+
+        // Configurar columnas del ListView
+        LVCOLUMN lvc = {0};
+        lvc.mask = LVCF_TEXT | LVCF_WIDTH;
+
+        lvc.pszText = L"Título";
+        lvc.cx = 200;
+        ListView_InsertColumn(hResultadoListView, 0, &lvc);
+
+        lvc.pszText = L"ISBN";
+        lvc.cx = 150;
+        ListView_InsertColumn(hResultadoListView, 1, &lvc);
+
+        lvc.pszText = L"Estado";
+        lvc.cx = 150;
+        ListView_InsertColumn(hResultadoListView, 2, &lvc);
 
         const int BUTTON_WIDTH = 150;
         const int BUTTON_HEIGHT = 30;
-        const int BUTTON_Y = 120;
+        const int BUTTON_Y = 300;
         const int TOTAL_BUTTONS_WIDTH = 2 * BUTTON_WIDTH + 20;
         const int START_X = (575 - TOTAL_BUTTONS_WIDTH) / 2;
 
         CreateWindowW(L"BUTTON", L"Regresar", WS_VISIBLE | WS_CHILD, START_X, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, hwnd, (HMENU)2, nullptr, nullptr);
-
         CreateWindowW(L"BUTTON", L"Prestar Libro", WS_VISIBLE | WS_CHILD, START_X + BUTTON_WIDTH + 20, BUTTON_Y, BUTTON_WIDTH, BUTTON_HEIGHT, hwnd, (HMENU)1, nullptr, nullptr);
         break;
     }
@@ -140,9 +166,9 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
             wchar_t lectorBuffer[256];
             GetWindowTextW(hUsernameLectorField, lectorBuffer, 256);
-            string lectorUsername = WStringToString(lectorBuffer);
+            string lectorIdentificador = WStringToString(lectorBuffer);
 
-            if (lectorUsername.empty())
+            if (lectorIdentificador.empty())
             {
                 MessageBoxW(hwnd, L"Ingrese el username del lector.", L"Error", MB_ICONERROR);
                 break;
@@ -172,19 +198,19 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
             int bibliotecarioId = atoi(PQgetvalue(res, 0, 0));
             PQclear(res);
 
-            const char *lectorParams[1] = {lectorUsername.c_str()};
-
-            res = PQexecParams(conn, "SELECT id FROM usuarios WHERE username = $1 AND rol = 'Lector'", 1, nullptr, lectorParams, nullptr, nullptr, 0);
+            const char *lectorParams[1] = {lectorIdentificador.c_str()};
+            res = PQexecParams(conn, "SELECT id, email FROM usuarios WHERE (username = $1 OR email = $1) AND rol = 'Lector'", 1, nullptr, lectorParams, nullptr, nullptr, 0);
 
             if (PQresultStatus(res) != PGRES_TUPLES_OK || PQntuples(res) == 0)
             {
-                MessageBoxW(hwnd, L"Lector no encontrado o no tiene rol 'lector'.", L"Error", MB_ICONERROR);
+                MessageBoxW(hwnd, L"Lector no encontrado (por username/email) o no tiene rol 'lector'.", L"Error", MB_ICONERROR);
                 PQclear(res);
                 PQfinish(conn);
                 break;
             }
 
             int lectorId = atoi(PQgetvalue(res, 0, 0));
+            string lectorEmail = PQgetvalue(res, 0, 1);
             PQclear(res);
 
             PGresult *resLibro = PQexecParams(conn, "SELECT id, titulo, estado FROM libros WHERE REGEXP_REPLACE(isbn, '[^0-9]', '', 'g') = $1", 1, nullptr, (const char *[]){isbn.c_str()}, nullptr, nullptr, 0);
@@ -244,6 +270,53 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
             PQclear(updateRes);
             PQfinish(conn);
 
+            // Envío de correo de confirmación (siempre se envía)
+            try {
+                if (!lectorEmail.empty()) {
+                    string asunto = "Confirmación de Préstamo de Libro";
+                    string cuerpo = "Estimado lector,\n\nSe ha registrado un préstamo a su nombre:\n";
+                    cuerpo += "Libro: " + titulo + "\nISBN: " + isbn + "\n";
+                    cuerpo += "Fecha devolución: " + fechaDevolucion + "\n\n";
+                    cuerpo += "Por favor devuelva el libro a tiempo.\n\nGracias.\nBiblioteca.";
+                    
+                    EmailSender::sendEmail(lectorEmail, asunto, cuerpo);
+                    cout << "[INFO] Correo de confirmación enviado a " << lectorEmail << endl;
+                }
+            } catch (const exception& e) {
+                cerr << "[ERROR] Envío de confirmación: " << e.what() << endl;
+            }
+
+            // Verificación para recordatorio (solo si la devolución es mañana)
+            time_t tActual = time(nullptr);
+            tm* tmActual = localtime(&tActual);
+            
+            tm fechaDev = {};
+            if (sscanf(fechaDevolucion.c_str(), "%d-%d-%d", &fechaDev.tm_mday, &fechaDev.tm_mon, &fechaDev.tm_year) == 3) {
+                fechaDev.tm_mon -= 1;
+                fechaDev.tm_year -= 1900;
+                time_t tDev = mktime(&fechaDev);
+                
+                // Calcular fecha de mañana
+                tm tmManana = *tmActual;
+                tmManana.tm_mday += 1;
+                mktime(&tmManana);
+                
+                // Comparar con fecha de devolución
+                tm* tmDev = localtime(&tDev);
+                if (tmManana.tm_year == tmDev->tm_year &&
+                    tmManana.tm_mon == tmDev->tm_mon &&
+                    tmManana.tm_mday == tmDev->tm_mday) {
+                    try {
+                        if (!lectorEmail.empty()) {
+                            EmailSender::sendReminderEmail(lectorEmail, titulo, fechaDevolucion);
+                            cout << "[INFO] Correo recordatorio enviado a " << lectorEmail << endl;
+                        }
+                    } catch (const exception& e) {
+                        cerr << "[ERROR] Envío de recordatorio: " << e.what() << endl;
+                    }
+                }
+            }
+
             wstring mensaje = L"Préstamo registrado exitosamente\n";
             mensaje += L"Libro: " + StringToWString(titulo) + L"\n";
             mensaje += L"Fecha devolución: " + StringToWString(fechaDevolucion);
@@ -251,43 +324,101 @@ LRESULT CALLBACK LoanBookWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
             SetWindowTextW(hIsbnField, L"978-");
             SetWindowTextW(hFechaDevolucionField, L"");
             SetWindowTextW(hUsernameLectorField, L"");
-
-            try
-            {
-                PGconn *connCorreo = conectarDB();
-                UserAuth userAuth(connCorreo);
-                string receptor = userAuth.getEmailByUsername(lectorUsername);
-                PQfinish(connCorreo);
-
-                if (!receptor.empty())
-                {
-                    cout << "[DEBUG] Enviando correo a: " << receptor << endl;
-                    EmailSender::sendLoanNotification(receptor, titulo, fechaDevolucion);
-                }
-                else
-                {
-                    cout << "[DEBUG] No se encontró email para el usuario: " << lectorUsername << endl;
-                }
-            }
-            catch (const exception &e)
-            {
-                wstring errorMsg = L"No se pudo enviar el correo de notificación:\n" + StringToWString(e.what());
-                MessageBoxW(hwnd, errorMsg.c_str(), L"Advertencia", MB_ICONWARNING);
-            }
+            break;
         }
         else if (LOWORD(wParam) == 2)
         {
             DestroyWindow(hwnd);
+            ShowWindow(hMenuWindow, SW_SHOW);
+        }
+        else if (LOWORD(wParam) == 3) // Acción del botón Buscar
+        {
+            wchar_t tituloBuffer[256];
+            GetWindowTextW(hTituloField, tituloBuffer, 256);
+            string tituloBusqueda = WStringToString(tituloBuffer);
+
+            if (tituloBusqueda.empty())
+            {
+                MessageBoxW(hwnd, L"Ingrese un título para buscar", L"Advertencia", MB_ICONWARNING);
+                break;
+            }
+
+            PGconn *conn = conectarDB();
+            if (PQstatus(conn) != CONNECTION_OK)
+            {
+                MessageBoxA(hwnd, PQerrorMessage(conn), "Error de conexión", MB_ICONERROR);
+                PQfinish(conn);
+                break;
+            }
+
+            string consulta = "%" + tituloBusqueda + "%";
+            const char *params[1] = {consulta.c_str()};
+            PGresult *res = PQexecParams(conn, "SELECT titulo, isbn, estado FROM libros WHERE LOWER(titulo) LIKE LOWER($1)", 1, nullptr, params, nullptr, nullptr, 0);
+
+            if (PQresultStatus(res) != PGRES_TUPLES_OK)
+            {
+                MessageBoxA(hwnd, PQerrorMessage(conn), "Error al buscar libros", MB_ICONERROR);
+                PQclear(res);
+                PQfinish(conn);
+                break;
+            }
+
+            ListView_DeleteAllItems(hResultadoListView);
+
+            int filas = PQntuples(res);
+            for (int i = 0; i < filas; ++i)
+            {
+                string titulo = PQgetvalue(res, i, 0);
+                string isbn = PQgetvalue(res, i, 1);
+                string estado = PQgetvalue(res, i, 2);
+
+                LVITEM item = {0};
+                item.mask = LVIF_TEXT;
+                item.iItem = i;
+                static wstring wsTitulo;
+                wsTitulo = StringToWString(titulo);
+                item.pszText = &wsTitulo[0];
+                ListView_InsertItem(hResultadoListView, &item);
+
+                static wstring wsIsbn, wsEstado;
+                wsIsbn = StringToWString(isbn);
+                wsEstado = StringToWString(estado);
+
+                ListView_SetItemText(hResultadoListView, i, 1, &wsIsbn[0]);
+                ListView_SetItemText(hResultadoListView, i, 2, &wsEstado[0]);
+            }
+
+            PQclear(res);
+            PQfinish(conn);
+            break;
         }
         break;
 
+    case WM_NOTIFY:
+    {
+        LPNMHDR nmhdr = (LPNMHDR)lParam;
+        if (nmhdr->hwndFrom == hResultadoListView && nmhdr->code == NM_DBLCLK)
+        {
+            LPNMITEMACTIVATE item = (LPNMITEMACTIVATE)lParam;
+            if (item->iItem != -1)
+            {
+                wchar_t isbnBuffer[256];
+                ListView_GetItemText(hResultadoListView, item->iItem, 1, isbnBuffer, sizeof(isbnBuffer)/sizeof(wchar_t));
+                SetWindowTextW(hIsbnField, isbnBuffer);
+                SetFocus(hFechaDevolucionField);
+            }
+        }
+        break;
+    }
+
+
     case WM_DESTROY:
-        ShowWindow(hMenuWindow, SW_SHOW);
         break;
 
     default:
-        return DefWindowProcW(hwnd, msg, wParam, lParam);
+        return DefWindowProc(hwnd, msg, wParam, lParam);
     }
+
     return 0;
 }
 
@@ -305,7 +436,7 @@ void CrearVentanaPrestamo(HINSTANCE hInstance, HWND hWndMenu)
 
     wstring titulo = L"Prestar Libro - Usuario: " + currentUser;
 
-    HWND hwndLoan = CreateWindowW(wc.lpszClassName, titulo.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME, CW_USEDEFAULT, CW_USEDEFAULT, 575, 200, nullptr, nullptr, hInstance, nullptr);
+    HWND hwndLoan = CreateWindowW(wc.lpszClassName, titulo.c_str(), WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME, CW_USEDEFAULT, CW_USEDEFAULT, 600, 400, nullptr, nullptr, hInstance, nullptr);
 
     if (hwndLoan == nullptr)
     {
