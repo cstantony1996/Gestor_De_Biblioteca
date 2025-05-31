@@ -100,8 +100,8 @@ LRESULT CALLBACK RegWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         CreateWindowW(L"STATIC", L"Correo:", WS_VISIBLE | WS_CHILD, 20, 60, 80, 20, hwnd, NULL, NULL, NULL);
         hCorreo = CreateWindowW(L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER, 110, 60, 250, 20, hwnd, NULL, NULL, NULL);
 
-        //CreateWindowW(L"STATIC", L"Contraseña:", WS_VISIBLE | WS_CHILD, 20, 100, 80, 20, hwnd, NULL, NULL, NULL);
-        //hPassword = CreateWindowW(L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_PASSWORD, 110, 100, 250, 20, hwnd, NULL, NULL, NULL);
+        CreateWindowW(L"STATIC", L"Contraseña:", WS_VISIBLE | WS_CHILD, 20, 100, 80, 20, hwnd, NULL, NULL, NULL);
+        hPassword = CreateWindowW(L"EDIT", L"", WS_VISIBLE | WS_CHILD | WS_BORDER | ES_PASSWORD, 110, 100, 250, 20, hwnd, NULL, NULL, NULL);
 
         CreateWindowW(L"STATIC", L"Rol:", WS_VISIBLE | WS_CHILD, 20, 140, 80, 20, hwnd, NULL, NULL, NULL);
         hRoleCombo = CreateWindowW(L"COMBOBOX", L"", WS_VISIBLE | WS_CHILD | CBS_DROPDOWNLIST | WS_BORDER, 110, 140, 250, 100, hwnd, NULL, NULL, NULL);
